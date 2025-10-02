@@ -1,9 +1,9 @@
-const crypto = require('crypto');
-const bcrypt = require('bcryptjs');
+const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
 
 /**
  * End-to-End Encryption Service for MeowChat
- * 
+ *
  * Security Features:
  * - AES-256-GCM encryption for messages
  * - RSA-2048 key exchange for secure key sharing
@@ -13,9 +13,9 @@ const bcrypt = require('bcryptjs');
  */
 class EncryptionService {
   constructor() {
-    this.algorithm = 'aes-256-gcm';
+    this.algorithm = "aes-256-gcm";
     this.keyLength = 32; // 256 bits
-    this.ivLength = 16;  // 128 bits
+    this.ivLength = 16; // 128 bits
     this.tagLength = 16; // 128 bits
     this.saltLength = 32; // 256 bits
     this.iterations = 100000; // PBKDF2 iterations
@@ -26,16 +26,16 @@ class EncryptionService {
    * Used for secure key exchange
    */
   generateUserKeyPair() {
-    const { publicKey, privateKey } = crypto.generateKeyPairSync('rsa', {
+    const { publicKey, privateKey } = crypto.generateKeyPairSync("rsa", {
       modulusLength: 2048,
       publicKeyEncoding: {
-        type: 'spki',
-        format: 'pem'
+        type: "spki",
+        format: "pem",
       },
       privateKeyEncoding: {
-        type: 'pkcs8',
-        format: 'pem'
-      }
+        type: "pkcs8",
+        format: "pem",
+      },
     });
 
     return { publicKey, privateKey };
@@ -49,8 +49,14 @@ class EncryptionService {
     if (!salt) {
       salt = crypto.randomBytes(this.saltLength);
     }
-    
-    const key = crypto.pbkdf2Sync(password, salt, this.iterations, this.keyLength, 'sha256');
+
+    const key = crypto.pbkdf2Sync(
+      password,
+      salt,
+      this.iterations,
+      this.keyLength,
+      "sha256"
+    );
     return { key, salt };
   }
 
@@ -69,18 +75,18 @@ class EncryptionService {
   encryptMessage(plaintext, key) {
     try {
       const iv = crypto.randomBytes(this.ivLength);
-      const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
-      
-      let encrypted = cipher.update(plaintext, 'utf8', 'hex');
-      encrypted += cipher.final('hex');
-      
+      const cipher = crypto.createCipheriv("aes-256-cbc", key, iv);
+
+      let encrypted = cipher.update(plaintext, "utf8", "hex");
+      encrypted += cipher.final("hex");
+
       return {
         encrypted,
-        iv: iv.toString('hex'),
-        algorithm: 'aes-256-cbc'
+        iv: iv.toString("hex"),
+        algorithm: "aes-256-cbc",
       };
     } catch (error) {
-      throw new Error('Encryption failed: ' + error.message);
+      throw new Error("Encryption failed: " + error.message);
     }
   }
 
@@ -91,15 +97,19 @@ class EncryptionService {
   decryptMessage(encryptedData, key) {
     try {
       const { encrypted, iv, algorithm } = encryptedData;
-      
-      const decipher = crypto.createDecipheriv('aes-256-cbc', key, Buffer.from(iv, 'hex'));
-      
-      let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-      decrypted += decipher.final('utf8');
-      
+
+      const decipher = crypto.createDecipheriv(
+        "aes-256-cbc",
+        key,
+        Buffer.from(iv, "hex")
+      );
+
+      let decrypted = decipher.update(encrypted, "hex", "utf8");
+      decrypted += decipher.final("utf8");
+
       return decrypted;
     } catch (error) {
-      throw new Error('Decryption failed: ' + error.message);
+      throw new Error("Decryption failed: " + error.message);
     }
   }
 
@@ -113,14 +123,14 @@ class EncryptionService {
         {
           key: userPublicKey,
           padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-          oaepHash: 'sha256'
+          oaepHash: "sha256",
         },
         chatKey
       );
-      
-      return encryptedKey.toString('base64');
+
+      return encryptedKey.toString("base64");
     } catch (error) {
-      throw new Error('Key encryption failed: ' + error.message);
+      throw new Error("Key encryption failed: " + error.message);
     }
   }
 
@@ -134,14 +144,14 @@ class EncryptionService {
         {
           key: userPrivateKey,
           padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
-          oaepHash: 'sha256'
+          oaepHash: "sha256",
         },
-        Buffer.from(encryptedKey, 'base64')
+        Buffer.from(encryptedKey, "base64")
       );
-      
+
       return chatKey;
     } catch (error) {
-      throw new Error('Key decryption failed: ' + error.message);
+      throw new Error("Key decryption failed: " + error.message);
     }
   }
 
@@ -150,7 +160,7 @@ class EncryptionService {
    * Prevents message replay attacks
    */
   generateMessageId() {
-    return crypto.randomBytes(16).toString('hex');
+    return crypto.randomBytes(16).toString("hex");
   }
 
   /**
@@ -158,7 +168,7 @@ class EncryptionService {
    * Used to detect tampering
    */
   hashMessage(message) {
-    return crypto.createHash('sha256').update(message).digest('hex');
+    return crypto.createHash("sha256").update(message).digest("hex");
   }
 
   /**
@@ -167,8 +177,8 @@ class EncryptionService {
   verifyMessageIntegrity(message, hash) {
     const computedHash = this.hashMessage(message);
     return crypto.timingSafeEqual(
-      Buffer.from(hash, 'hex'),
-      Buffer.from(computedHash, 'hex')
+      Buffer.from(hash, "hex"),
+      Buffer.from(computedHash, "hex")
     );
   }
 
@@ -176,7 +186,7 @@ class EncryptionService {
    * Generate secure session token
    */
   generateSessionToken() {
-    return crypto.randomBytes(32).toString('hex');
+    return crypto.randomBytes(32).toString("hex");
   }
 
   /**
@@ -186,10 +196,10 @@ class EncryptionService {
   encryptPrivateKey(privateKey, password) {
     const { key, salt } = this.deriveKeyFromPassword(password);
     const encrypted = this.encryptMessage(privateKey, key);
-    
+
     return {
       ...encrypted,
-      salt: salt.toString('hex')
+      salt: salt.toString("hex"),
     };
   }
 
@@ -198,8 +208,11 @@ class EncryptionService {
    */
   decryptPrivateKey(encryptedData, password) {
     const { salt, ...encryptedKey } = encryptedData;
-    const { key } = this.deriveKeyFromPassword(password, Buffer.from(salt, 'hex'));
-    
+    const { key } = this.deriveKeyFromPassword(
+      password,
+      Buffer.from(salt, "hex")
+    );
+
     return this.decryptMessage(encryptedKey, key);
   }
 
@@ -210,16 +223,16 @@ class EncryptionService {
   createSecureChat(participants) {
     const chatKey = this.generateChatKey();
     const chatId = this.generateMessageId();
-    
-    const encryptedKeys = participants.map(participant => ({
+
+    const encryptedKeys = participants.map((participant) => ({
       userId: participant.userId,
-      encryptedKey: this.encryptKeyForUser(chatKey, participant.publicKey)
+      encryptedKey: this.encryptKeyForUser(chatKey, participant.publicKey),
     }));
-    
+
     return {
       chatId,
       encryptedKeys,
-      algorithm: this.algorithm
+      algorithm: this.algorithm,
     };
   }
 
@@ -227,8 +240,8 @@ class EncryptionService {
    * Validate encryption parameters
    */
   validateEncryptionData(data) {
-    const required = ['encrypted', 'iv', 'tag', 'algorithm'];
-    return required.every(field => field in data);
+    const required = ["encrypted", "iv", "tag", "algorithm"];
+    return required.every((field) => field in data);
   }
 }
 

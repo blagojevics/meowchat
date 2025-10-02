@@ -1,38 +1,50 @@
-import React, { useState } from 'react';
-import { Box, Grid, Paper } from '@mui/material';
-import ChatList from './ChatList';
-import ChatWindow from './ChatWindow';
-import UserList from './UserList';
+import React, { useState } from "react";
+import { Box, Grid, Paper } from "@mui/material";
+import ChatList from "./ChatList";
+import ChatWindow from "./ChatWindow";
+import UserList from "./UserList";
 
 const ChatApp = () => {
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [showUserList, setShowUserList] = useState(false);
 
+  const handleShowAllUsers = () => {
+    setShowUserList(true);
+    setSelectedChatId(null); // Clear chat selection when showing all users
+  };
+
+  const handleChatSelect = (chatId) => {
+    setSelectedChatId(chatId);
+    setShowUserList(false); // Hide user list when selecting a chat
+  };
+
   return (
-    <Box sx={{ height: '100vh', display: 'flex', bgcolor: 'background.default' }}>
-      <Grid container sx={{ height: '100%' }}>
+    <Box
+      sx={{ height: "100vh", display: "flex", bgcolor: "background.default" }}
+    >
+      <Grid container sx={{ height: "100%" }}>
         {/* Chat List Sidebar */}
         <Grid item xs={12} sm={4} md={3}>
-          <Paper 
-            elevation={0} 
-            sx={{ 
-              height: '100%', 
+          <Paper
+            elevation={0}
+            sx={{
+              height: "100%",
               borderRadius: 0,
               borderRight: 1,
-              borderColor: 'divider'
+              borderColor: "divider",
             }}
           >
-            <ChatList 
+            <ChatList
               selectedChatId={selectedChatId}
-              onChatSelect={setSelectedChatId}
-              onShowUserList={() => setShowUserList(true)}
+              onChatSelect={handleChatSelect}
+              onShowUserList={handleShowAllUsers}
             />
           </Paper>
         </Grid>
 
         {/* Main Chat Window */}
         <Grid item xs={12} sm={8} md={showUserList ? 6 : 9}>
-          <ChatWindow 
+          <ChatWindow
             chatId={selectedChatId}
             onShowUserList={() => setShowUserList(true)}
           />
@@ -41,16 +53,16 @@ const ChatApp = () => {
         {/* User List Sidebar (conditional) */}
         {showUserList && (
           <Grid item xs={12} md={3}>
-            <Paper 
-              elevation={0} 
-              sx={{ 
-                height: '100%', 
+            <Paper
+              elevation={0}
+              sx={{
+                height: "100%",
                 borderRadius: 0,
                 borderLeft: 1,
-                borderColor: 'divider'
+                borderColor: "divider",
               }}
             >
-              <UserList 
+              <UserList
                 chatId={selectedChatId}
                 onClose={() => setShowUserList(false)}
               />

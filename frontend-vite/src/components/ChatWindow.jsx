@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Paper,
@@ -6,36 +6,21 @@ import {
   Avatar,
   IconButton,
   Divider,
-  Chip,
-} from '@mui/material';
-import {
-  Info,
-  MoreVert,
-  Group,
-  Person,
-} from '@mui/icons-material';
-import InfiniteScroll from 'react-infinite-scroll-component';
-import MessageInput from './MessageInput';
-import Message from './Message';
-import { useChat } from '../hooks/useChat';
-import { useAuth } from '../contexts/AuthContext';
-import { useSocket } from '../contexts/SocketContext';
+} from "@mui/material";
+import { Info, MoreVert, Group } from "@mui/icons-material";
+import MessageInput from "./MessageInput";
+import Message from "./Message";
+import { useChat } from "../hooks/useChat";
+import { useAuth } from "../contexts/AuthContext";
+import { useSocket } from "../contexts/SocketContext";
 
 const ChatWindow = ({ chatId, onShowUserList }) => {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
-  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
-  
+
   const { user } = useAuth();
   const { joinChat, leaveChat, typingUsers } = useSocket();
-  const {
-    chat,
-    messages,
-    loading,
-    hasMore,
-    sendMessage,
-    loadMoreMessages,
-  } = useChat(chatId);
+  const { chat, messages, loading, sendMessage } = useChat(chatId);
 
   // Join/leave chat on mount/unmount
   useEffect(() => {
@@ -45,65 +30,61 @@ const ChatWindow = ({ chatId, onShowUserList }) => {
     }
   }, [chatId, joinChat, leaveChat]);
 
-  // Scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (shouldScrollToBottom && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, shouldScrollToBottom]);
-
-  // Handle scroll events to determine if we should auto-scroll
-  const handleScroll = (e) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.target;
-    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-    setShouldScrollToBottom(isNearBottom);
-  };
+  }, [messages.length]);
 
   const getChatDisplayName = () => {
-    if (!chat) return '';
-    
-    if (chat.type === 'group') {
-      return chat.name || 'Group Chat';
+    if (!chat) return "";
+
+    if (chat.type === "group") {
+      return chat.name || "Group Chat";
     }
-    
+
     const otherParticipant = chat.participants.find(
-      p => p.user._id !== user._id
+      (p) => p.user._id !== user._id
     );
-    
-    return otherParticipant?.user.username || 'Unknown User';
+
+    return otherParticipant?.user.username || "Unknown User";
   };
 
   const getChatAvatar = () => {
-    if (!chat) return '';
-    
-    if (chat.type === 'group') {
-      return chat.chatImage || '';
+    if (!chat) return "";
+
+    if (chat.type === "group") {
+      return chat.chatImage || "";
     }
-    
+
     const otherParticipant = chat.participants.find(
-      p => p.user._id !== user._id
+      (p) => p.user._id !== user._id
     );
-    
-    return otherParticipant?.user.profilePicture || '';
+
+    return otherParticipant?.user.profilePicture || "";
   };
 
   const getTypingIndicator = () => {
     if (!chatId || !typingUsers.has(chatId)) return null;
-    
+
     const typingUserIds = Array.from(typingUsers.get(chatId));
     const typingNames = typingUserIds
-      .filter(userId => userId !== user._id)
-      .map(userId => {
-        const participant = chat?.participants.find(p => p.user._id === userId);
-        return participant?.user.username || 'Someone';
+      .filter((userId) => userId !== user._id)
+      .map((userId) => {
+        const participant = chat?.participants.find(
+          (p) => p.user._id === userId
+        );
+        return participant?.user.username || "Someone";
       });
-    
+
     if (typingNames.length === 0) return null;
-    
-    const text = typingNames.length === 1 
-      ? `${typingNames[0]} is typing...`
-      : `${typingNames.join(', ')} are typing...`;
-    
+
+    const text =
+      typingNames.length === 1
+        ? `${typingNames[0]} is typing...`
+        : `${typingNames.join(", ")} are typing...`;
+
     return (
       <Box sx={{ px: 2, py: 1 }}>
         <Typography variant="caption" color="text.secondary" fontStyle="italic">
@@ -115,13 +96,13 @@ const ChatWindow = ({ chatId, onShowUserList }) => {
 
   if (!chatId) {
     return (
-      <Box 
-        sx={{ 
-          height: '100%', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          flexDirection: 'column'
+      <Box
+        sx={{
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexDirection: "column",
         }}
       >
         <Typography variant="h5" color="text.secondary" gutterBottom>
@@ -136,12 +117,12 @@ const ChatWindow = ({ chatId, onShowUserList }) => {
 
   if (loading && !chat) {
     return (
-      <Box 
-        sx={{ 
-          height: '100%', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center' 
+      <Box
+        sx={{
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
         <Typography>Loading chat...</Typography>
@@ -150,31 +131,40 @@ const ChatWindow = ({ chatId, onShowUserList }) => {
   }
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box
+      sx={{
+        height: "100%",
+        maxHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden", // Prevent the entire component from expanding
+      }}
+    >
       {/* Chat Header */}
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          p: 2, 
-          borderBottom: 1, 
-          borderColor: 'divider',
-          borderRadius: 0
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2,
+          borderBottom: 1,
+          borderColor: "divider",
+          borderRadius: 0,
+          flexShrink: 0,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
           <Avatar src={getChatAvatar()} sx={{ mr: 2 }}>
-            {chat?.type === 'group' ? (
+            {chat?.type === "group" ? (
               <Group />
             ) : (
               getChatDisplayName()[0]?.toUpperCase()
             )}
           </Avatar>
-          
+
           <Box sx={{ flexGrow: 1 }}>
             <Typography variant="h6" fontWeight="bold">
               {getChatDisplayName()}
             </Typography>
-            {chat?.type === 'group' && (
+            {chat?.type === "group" && (
               <Typography variant="body2" color="text.secondary">
                 {chat.participants.length} members
               </Typography>
@@ -184,51 +174,44 @@ const ChatWindow = ({ chatId, onShowUserList }) => {
           <IconButton onClick={onShowUserList}>
             <Info />
           </IconButton>
-          
+
           <IconButton>
             <MoreVert />
           </IconButton>
         </Box>
       </Paper>
 
-      {/* Messages Container */}
-      <Box 
-        sx={{ 
-          flexGrow: 1, 
-          overflow: 'auto',
-          display: 'flex',
-          flexDirection: 'column-reverse'
-        }}
-        id="messages-container"
+      {/* Messages Container - Simplified */}
+      <Box
         ref={messagesContainerRef}
-        onScroll={handleScroll}
+        sx={{
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          padding: "16px",
+          backgroundColor: "#f5f5f5",
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
+          minHeight: 0, // Important for flex child to respect overflow
+          maxHeight: "100%", // Prevent expansion beyond container
+        }}
       >
-        <div ref={messagesEndRef} />
-        
-        {/* Typing Indicator */}
-        {getTypingIndicator()}
-
-        {/* Messages */}
-        <InfiniteScroll
-          dataLength={messages.length}
-          next={loadMoreMessages}
-          hasMore={hasMore}
-          loader={
-            <Box sx={{ textAlign: 'center', py: 2 }}>
-              <Typography variant="caption" color="text.secondary">
-                Loading more messages...
-              </Typography>
-            </Box>
-          }
-          scrollableTarget="messages-container"
-          inverse={true}
-          style={{ display: 'flex', flexDirection: 'column-reverse' }}
-        >
-          {messages.map((message, index) => {
+        {messages.length === 0 && !loading ? (
+          <Box sx={{ textAlign: "center", py: 4 }}>
+            <Typography color="text.secondary">
+              No messages yet. Say hello! 👋
+            </Typography>
+          </Box>
+        ) : (
+          messages.map((message, index) => {
             const prevMessage = messages[index - 1];
-            const showAvatar = !prevMessage || 
+            const showAvatar =
+              !prevMessage ||
               prevMessage.sender._id !== message.sender._id ||
-              new Date(message.createdAt).getTime() - new Date(prevMessage.createdAt).getTime() > 300000; // 5 minutes
+              new Date(message.createdAt).getTime() -
+                new Date(prevMessage.createdAt).getTime() >
+                300000;
 
             return (
               <Message
@@ -238,24 +221,21 @@ const ChatWindow = ({ chatId, onShowUserList }) => {
                 isOwn={message.sender._id === user._id}
               />
             );
-          })}
-        </InfiniteScroll>
-
-        {messages.length === 0 && !loading && (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography color="text.secondary">
-              No messages yet. Say hello! 👋
-            </Typography>
-          </Box>
+          })
         )}
+
+        {/* Typing Indicator */}
+        {getTypingIndicator()}
+
+        {/* Scroll anchor */}
+        <div ref={messagesEndRef} />
       </Box>
 
       {/* Message Input */}
-      <Divider />
-      <MessageInput 
-        chatId={chatId}
-        onSendMessage={sendMessage}
-      />
+      <Box sx={{ flexShrink: 0 }}>
+        <Divider />
+        <MessageInput chatId={chatId} onSendMessage={sendMessage} />
+      </Box>
     </Box>
   );
 };

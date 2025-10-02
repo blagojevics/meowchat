@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   List,
@@ -12,15 +12,11 @@ import {
   InputAdornment,
   IconButton,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Fab,
   Menu,
   MenuItem,
   Divider,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Search,
   Add,
@@ -28,85 +24,92 @@ import {
   Group,
   Person,
   Logout,
-} from '@mui/icons-material';
-import { format, isToday, isYesterday } from 'date-fns';
-import { useChats } from '../hooks/useChat';
-import { useAuth } from '../contexts/AuthContext';
-import { useSocket } from '../contexts/SocketContext';
+} from "@mui/icons-material";
+import { format, isToday, isYesterday } from "date-fns";
+import { useChats } from "../hooks/useChat";
+import { useAuth } from "../contexts/AuthContext";
+import { useSocket } from "../contexts/SocketContext";
+import CreateChatDialog from "./CreateChatDialog";
 
 const ChatList = ({ selectedChatId, onChatSelect, onShowUserList }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState(null);
-  
-  const { chats, loading, createChat } = useChats();
+
+  const { chats, loading, createChat, refreshChats } = useChats();
   const { user, logout } = useAuth();
   const { onlineUsers } = useSocket();
 
+  const handleChatCreated = (newChat) => {
+    setShowCreateDialog(false);
+    refreshChats(); // Refresh the chat list
+    onChatSelect(newChat._id); // Select the new chat
+  };
+
   // Filter chats based on search term
-  const filteredChats = chats.filter(chat => {
+  const filteredChats = chats.filter((chat) => {
     if (!searchTerm) return true;
-    
+
     const searchLower = searchTerm.toLowerCase();
-    
+
     // For group chats, search by chat name
-    if (chat.type === 'group') {
+    if (chat.type === "group") {
       return chat.name?.toLowerCase().includes(searchLower);
     }
-    
+
     // For private chats, search by other participant's username
     const otherParticipant = chat.participants.find(
-      p => p.user._id !== user._id
+      (p) => p.user._id !== user._id
     );
-    
+
     return otherParticipant?.user.username.toLowerCase().includes(searchLower);
   });
 
   const formatMessageTime = (date) => {
     const messageDate = new Date(date);
-    
+
     if (isToday(messageDate)) {
-      return format(messageDate, 'HH:mm');
+      return format(messageDate, "HH:mm");
     }
-    
+
     if (isYesterday(messageDate)) {
-      return 'Yesterday';
+      return "Yesterday";
     }
-    
-    return format(messageDate, 'MMM dd');
+
+    return format(messageDate, "MMM dd");
   };
 
   const getChatDisplayName = (chat) => {
-    if (chat.type === 'group') {
-      return chat.name || 'Group Chat';
+    if (chat.type === "group") {
+      return chat.name || "Group Chat";
     }
-    
+
     const otherParticipant = chat.participants.find(
-      p => p.user._id !== user._id
+      (p) => p.user._id !== user._id
     );
-    
-    return otherParticipant?.user.username || 'Unknown User';
+
+    return otherParticipant?.user.username || "Unknown User";
   };
 
   const getChatAvatar = (chat) => {
-    if (chat.type === 'group') {
-      return chat.chatImage || '';
+    if (chat.type === "group") {
+      return chat.chatImage || "";
     }
-    
+
     const otherParticipant = chat.participants.find(
-      p => p.user._id !== user._id
+      (p) => p.user._id !== user._id
     );
-    
-    return otherParticipant?.user.profilePicture || '';
+
+    return otherParticipant?.user.profilePicture || "";
   };
 
   const isUserOnline = (chat) => {
-    if (chat.type === 'group') return false;
-    
+    if (chat.type === "group") return false;
+
     const otherParticipant = chat.participants.find(
-      p => p.user._id !== user._id
+      (p) => p.user._id !== user._id
     );
-    
+
     return otherParticipant && onlineUsers.has(otherParticipant.user._id);
   };
 
@@ -129,21 +132,18 @@ const ChatList = ({ selectedChatId, onChatSelect, onShowUserList }) => {
 
   if (loading && chats.length === 0) {
     return (
-      <Box sx={{ p: 2, textAlign: 'center' }}>
+      <Box sx={{ p: 2, textAlign: "center" }}>
         <Typography>Loading chats...</Typography>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <Avatar 
-            src={user?.profilePicture} 
-            sx={{ mr: 2 }}
-          >
+      <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+          <Avatar src={user?.profilePicture} sx={{ mr: 2 }}>
             {user?.username?.[0]?.toUpperCase()}
           </Avatar>
           <Box sx={{ flexGrow: 1 }}>
@@ -151,7 +151,7 @@ const ChatList = ({ selectedChatId, onChatSelect, onShowUserList }) => {
               {user?.username}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {user?.bio || 'Available'}
+              {user?.bio || "Available"}
             </Typography>
           </Box>
           <IconButton onClick={handleMenuOpen}>
@@ -177,11 +177,11 @@ const ChatList = ({ selectedChatId, onChatSelect, onShowUserList }) => {
       </Box>
 
       {/* Chat List */}
-      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+      <Box sx={{ flexGrow: 1, overflow: "auto" }}>
         {filteredChats.length === 0 ? (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
+          <Box sx={{ p: 3, textAlign: "center" }}>
             <Typography color="text.secondary">
-              {searchTerm ? 'No chats found' : 'No chats yet'}
+              {searchTerm ? "No chats found" : "No chats yet"}
             </Typography>
             {!searchTerm && (
               <Button
@@ -204,9 +204,9 @@ const ChatList = ({ selectedChatId, onChatSelect, onShowUserList }) => {
                 onClick={() => onChatSelect(chat._id)}
                 sx={{
                   borderBottom: 1,
-                  borderColor: 'divider',
-                  '&.Mui-selected': {
-                    bgcolor: 'action.selected',
+                  borderColor: "divider",
+                  "&.Mui-selected": {
+                    bgcolor: "action.selected",
                   },
                 }}
               >
@@ -216,12 +216,12 @@ const ChatList = ({ selectedChatId, onChatSelect, onShowUserList }) => {
                     color="success"
                     invisible={!isUserOnline(chat)}
                     anchorOrigin={{
-                      vertical: 'bottom',
-                      horizontal: 'right',
+                      vertical: "bottom",
+                      horizontal: "right",
                     }}
                   >
                     <Avatar src={getChatAvatar(chat)}>
-                      {chat.type === 'group' ? (
+                      {chat.type === "group" ? (
                         <Group />
                       ) : (
                         getChatDisplayName(chat)[0]?.toUpperCase()
@@ -229,7 +229,7 @@ const ChatList = ({ selectedChatId, onChatSelect, onShowUserList }) => {
                     </Avatar>
                   </Badge>
                 </ListItemAvatar>
-                
+
                 <ListItemText
                   primary={
                     <Typography variant="subtitle1" fontWeight="medium">
@@ -237,14 +237,16 @@ const ChatList = ({ selectedChatId, onChatSelect, onShowUserList }) => {
                     </Typography>
                   }
                   secondary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", mt: 0.5 }}
+                    >
                       <Typography
                         variant="body2"
                         color="text.secondary"
                         sx={{ flexGrow: 1, mr: 1 }}
                         noWrap
                       >
-                        {chat.lastMessage?.content || 'No messages yet'}
+                        {chat.lastMessage?.content || "No messages yet"}
                       </Typography>
                       {chat.lastActivity && (
                         <Typography variant="caption" color="text.secondary">
@@ -266,7 +268,7 @@ const ChatList = ({ selectedChatId, onChatSelect, onShowUserList }) => {
         aria-label="create chat"
         onClick={handleCreateChat}
         sx={{
-          position: 'absolute',
+          position: "absolute",
           bottom: 16,
           right: 16,
         }}
@@ -291,25 +293,12 @@ const ChatList = ({ selectedChatId, onChatSelect, onShowUserList }) => {
         </MenuItem>
       </Menu>
 
-      {/* Create Chat Dialog - Placeholder */}
-      <Dialog
+      {/* Create Chat Dialog */}
+      <CreateChatDialog
         open={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Create New Chat</DialogTitle>
-        <DialogContent>
-          <Typography color="text.secondary">
-            Chat creation feature coming soon! This will allow you to search for users and create new private or group chats.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowCreateDialog(false)}>
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onChatCreated={handleChatCreated}
+      />
     </Box>
   );
 };

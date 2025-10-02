@@ -1,0 +1,18 @@
+# Backend files
+backend/*.js linguist-language=Node.js
+backend/**/*.js linguist-language=Node.js
+
+# Frontend files  
+frontend-vite/*.js linguist-language=JavaScript
+frontend-vite/**/*.js linguist-language=JavaScript
+frontend-vite/*.jsx linguist-language=JavaScript
+frontend-vite/**/*.jsx linguist-language=JavaScript
+
+# Configuration files
+*.json linguist-documentation
+package.json linguist-documentation=false
+pnpm-workspace.yaml linguist-documentation
+
+# Documentation
+README.md linguist-documentation
+*.md linguist-documentation

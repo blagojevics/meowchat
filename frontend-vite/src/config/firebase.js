@@ -1,7 +1,7 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getStorage, connectStorageEmulator } from 'firebase/storage';
+import { initializeApp } from "firebase/app";
+import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getStorage, connectStorageEmulator } from "firebase/storage";
 
 // Firebase config using Vite environment variables
 const firebaseConfig = {
@@ -11,7 +11,7 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 // Initialize Firebase
@@ -24,9 +24,9 @@ export const storage = getStorage(app);
 
 // Development mode: Use Firebase emulators if available
 if (import.meta.env.DEV) {
-  console.log('🔥 Firebase initialized in development mode');
-  console.log('📍 Auth Domain:', firebaseConfig.authDomain);
-  
+  console.log("🔥 Firebase initialized in development mode");
+  console.log("📍 Auth Domain:", firebaseConfig.authDomain);
+
   // Optional: Connect to emulators in development
   // Uncomment these lines if you want to use Firebase emulators
   /*

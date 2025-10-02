@@ -5,6 +5,7 @@ A modern, secure real-time chat application built with Node.js, React, and Fireb
 ## Features
 
 ### 🔐 Security Features
+
 - **End-to-End Encryption**: Military-grade AES-256 encryption for all messages
 - **RSA Key Exchange**: Secure 2048-bit RSA key exchange for perfect forward secrecy
 - **Hybrid Authentication**: Supports both local MongoDB users and Firebase authentication
@@ -12,6 +13,7 @@ A modern, secure real-time chat application built with Node.js, React, and Fireb
 - **Password Security**: PBKDF2 key derivation with salt for password protection
 
 ### 💬 Chat Features
+
 - **Real-time Messaging**: Instant message delivery using Socket.io
 - **Private Chats**: Secure one-on-one conversations
 - **Group Chats**: Multi-user encrypted chat rooms
@@ -19,6 +21,7 @@ A modern, secure real-time chat application built with Node.js, React, and Fireb
 - **User Presence**: Real-time online/offline status
 
 ### 🎨 User Experience
+
 - **Modern UI**: Clean, responsive design with Material-UI
 - **Mobile Responsive**: Works seamlessly on all devices
 - **Real-time Updates**: Live message delivery and user status
@@ -26,6 +29,7 @@ A modern, secure real-time chat application built with Node.js, React, and Fireb
 ## Tech Stack
 
 ### Backend
+
 - **Node.js** with Express.js
 - **MongoDB** for data persistence
 - **Socket.io** for real-time communication
@@ -33,6 +37,7 @@ A modern, secure real-time chat application built with Node.js, React, and Fireb
 - **Military-grade encryption** with crypto module
 
 ### Frontend
+
 - **React** with Vite
 - **Material-UI** for components
 - **Firebase SDK** for authentication
@@ -41,6 +46,7 @@ A modern, secure real-time chat application built with Node.js, React, and Fireb
 ## Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
 - MongoDB running locally
 - Firebase project set up
@@ -49,21 +55,24 @@ A modern, secure real-time chat application built with Node.js, React, and Fireb
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd meowchat
    ```
 
 2. **Install dependencies**
+
    ```bash
    pnpm install
    ```
 
 3. **Set up environment variables**
-   
+
    Copy `.env.example` files in both `backend/` and `frontend-vite/` folders to `.env` and fill in your values.
 
 4. **Set up Firebase**
+
    - Create a Firebase project
    - Enable Authentication with Google provider
    - Download service account key as `serviceAccountKey.json` in backend folder

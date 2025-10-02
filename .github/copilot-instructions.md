@@ -1,4 +1,5 @@
 <!-- Use this file to provide workspace-specific custom instructions to Copilot. -->
+
 - [x] Verify that the copilot-instructions.md file in the .github directory is created.
 - [x] Clarify Project Requirements - MeowChat full-stack real-time chat application
 - [x] Scaffold the Project - Complete project structure created with backend and frontend

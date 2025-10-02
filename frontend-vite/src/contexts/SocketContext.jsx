@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
-import { useAuth } from './AuthContext';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { io } from "socket.io-client";
+import { useAuth } from "./AuthContext";
 
 const SocketContext = createContext();
 
@@ -13,34 +13,41 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     if (user && token) {
       // Initialize socket connection
-      const newSocket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000', {
-        auth: {
-          token: token
+      const newSocket = io(
+        import.meta.env.VITE_BACKEND_URL || "http://localhost:5000",
+        {
+          auth: {
+            token: token,
+          },
         }
-      });
+      );
 
       // Connection event handlers
-      newSocket.on('connect', () => {
-        console.log('🔌 Connected to server');
+      newSocket.on("connect", () => {
+        console.log("🔌 Connected to server");
         setSocket(newSocket);
       });
 
-      newSocket.on('disconnect', () => {
-        console.log('🔌 Disconnected from server');
+      newSocket.on("disconnect", () => {
+        console.log("🔌 Disconnected from server");
         setSocket(null);
       });
 
-      newSocket.on('connect_error', (error) => {
-        console.error('❌ Connection error:', error);
+      newSocket.on("connect_error", (error) => {
+        console.error("❌ Connection error:", error);
       });
 
       // User status event handlers
-      newSocket.on('user_online', (data) => {
-        setOnlineUsers(prev => new Set([...prev, data.userId]));
+      newSocket.on("online_users", (users) => {
+        setOnlineUsers(new Set(users.map((u) => u.userId)));
       });
 
-      newSocket.on('user_offline', (data) => {
-        setOnlineUsers(prev => {
+      newSocket.on("user_online", (data) => {
+        setOnlineUsers((prev) => new Set([...prev, data.userId]));
+      });
+
+      newSocket.on("user_offline", (data) => {
+        setOnlineUsers((prev) => {
           const newSet = new Set(prev);
           newSet.delete(data.userId);
           return newSet;
@@ -48,8 +55,8 @@ export const SocketProvider = ({ children }) => {
       });
 
       // Typing indicators
-      newSocket.on('user_typing', (data) => {
-        setTypingUsers(prev => {
+      newSocket.on("user_typing", (data) => {
+        setTypingUsers((prev) => {
           const newMap = new Map(prev);
           if (!newMap.has(data.chatId)) {
             newMap.set(data.chatId, new Set());
@@ -59,8 +66,8 @@ export const SocketProvider = ({ children }) => {
         });
       });
 
-      newSocket.on('user_stop_typing', (data) => {
-        setTypingUsers(prev => {
+      newSocket.on("user_stop_typing", (data) => {
+        setTypingUsers((prev) => {
           const newMap = new Map(prev);
           if (newMap.has(data.chatId)) {
             newMap.get(data.chatId).delete(data.userId);
@@ -73,8 +80,8 @@ export const SocketProvider = ({ children }) => {
       });
 
       // Error handling
-      newSocket.on('error', (error) => {
-        console.error('🚨 Socket error:', error);
+      newSocket.on("error", (error) => {
+        console.error("🚨 Socket error:", error);
       });
 
       return () => {
@@ -86,49 +93,49 @@ export const SocketProvider = ({ children }) => {
   // Socket helper functions
   const joinChat = (chatId) => {
     if (socket) {
-      socket.emit('join_chat', chatId);
+      socket.emit("join_chat", chatId);
     }
   };
 
   const leaveChat = (chatId) => {
     if (socket) {
-      socket.emit('leave_chat', chatId);
+      socket.emit("leave_chat", chatId);
     }
   };
 
   const sendMessage = (messageData) => {
     if (socket) {
-      socket.emit('send_message', messageData);
+      socket.emit("send_message", messageData);
     }
   };
 
   const startTyping = (chatId) => {
     if (socket) {
-      socket.emit('typing_start', chatId);
+      socket.emit("typing_start", chatId);
     }
   };
 
   const stopTyping = (chatId) => {
     if (socket) {
-      socket.emit('typing_stop', chatId);
+      socket.emit("typing_stop", chatId);
     }
   };
 
   const addReaction = (messageId, emoji) => {
     if (socket) {
-      socket.emit('add_reaction', { messageId, emoji });
+      socket.emit("add_reaction", { messageId, emoji });
     }
   };
 
   const editMessage = (messageId, content) => {
     if (socket) {
-      socket.emit('edit_message', { messageId, content });
+      socket.emit("edit_message", { messageId, content });
     }
   };
 
   const deleteMessage = (messageId) => {
     if (socket) {
-      socket.emit('delete_message', messageId);
+      socket.emit("delete_message", messageId);
     }
   };
 
@@ -166,16 +173,14 @@ export const SocketProvider = ({ children }) => {
   };
 
   return (
-    <SocketContext.Provider value={value}>
-      {children}
-    </SocketContext.Provider>
+    <SocketContext.Provider value={value}>{children}</SocketContext.Provider>
   );
 };
 
 export const useSocket = () => {
   const context = useContext(SocketContext);
   if (!context) {
-    throw new Error('useSocket must be used within a SocketProvider');
+    throw new Error("useSocket must be used within a SocketProvider");
   }
   return context;
 };
