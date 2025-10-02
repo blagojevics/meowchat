@@ -1,0 +1,21 @@
+{
+  "name": "meowchat-workspace",
+  "private": true,
+  "version": "1.0.0",
+  "description": "MeowChat full-stack chat application workspace",
+  "scripts": {
+    "dev": "pnpm --parallel --recursive run dev",
+    "start": "pnpm --parallel --recursive run start",
+    "build": "pnpm --recursive run build",
+    "install:all": "pnpm install --recursive",
+    "clean": "pnpm --recursive exec rm -rf node_modules && rm -rf node_modules"
+  },
+  "keywords": [
+    "chat",
+    "real-time",
+    "fullstack",
+    "workspace"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}
