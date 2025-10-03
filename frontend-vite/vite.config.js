@@ -28,7 +28,7 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: false, // Disable sourcemaps for production
-    minify: "terser", // Use terser for better minification
+    minify: "esbuild", // Use esbuild (default, faster than terser)
     rollupOptions: {
       output: {
         manualChunks: {
