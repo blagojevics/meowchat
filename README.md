@@ -1,18 +1,18 @@
-# MeowChat 
+# MeowChat
 
 A modern, secure real-time chat application built with Node.js, React, and Firebase.
 
 ## Features
 
 ### 🔐 Security Features
+
 <<<<<<< HEAD
 
 - **End-to-End Encryption**: Military-grade AES-256 encryption for all messages
-- **RSA Key Exchange**: Secure 2048-bit RSA key exchange for perfect forward secrecy
-=======
+- # **RSA Key Exchange**: Secure 2048-bit RSA key exchange for perfect forward secrecy
 - **End-to-End Encryption**
 - **RSA Key Exchange**
->>>>>>> d39b1982985a631d3a099e0f6a418491971d08a0
+  > > > > > > > d39b1982985a631d3a099e0f6a418491971d08a0
 - **Hybrid Authentication**: Supports both local MongoDB users and Firebase authentication
 - **Google OAuth Integration**: Seamless sign-in with Google accounts
 - **Password Security**
@@ -129,4 +129,5 @@ pnpm dev:backend  # Runs only backend
 <<<<<<< HEAD
 Built with ❤️ using modern web technologies and security best practices.
 =======
->>>>>>> d39b1982985a631d3a099e0f6a418491971d08a0
+
+> > > > > > > d39b1982985a631d3a099e0f6a418491971d08a0

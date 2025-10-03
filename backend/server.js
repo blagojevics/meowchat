@@ -13,23 +13,30 @@ const messageRoutes = require("./routes/messages");
 const socketHandlers = require("./socket/socketHandlers");
 
 // Security middleware imports
-const { generalLimiter, authLimiter, messageLimiter, uploadLimiter, chatCreationLimiter } = require("./middleware/rateLimiter");
+const {
+  generalLimiter,
+  authLimiter,
+  messageLimiter,
+  uploadLimiter,
+  chatCreationLimiter,
+} = require("./middleware/rateLimiter");
 const { sanitizeInput } = require("./middleware/security");
 
 const app = express();
 const server = http.createServer(app);
 
 // CORS origins - restrict to specific domains
-const allowedOrigins = process.env.NODE_ENV === 'production' 
-  ? [process.env.CORS_ORIGIN] 
-  : [
-      "http://localhost:3000",
-      "http://localhost:3001", 
-      "http://localhost:3002",
-      "http://localhost:5173",
-      "http://127.0.0.1:3000",
-      "http://127.0.0.1:5173",
-    ];
+const allowedOrigins =
+  process.env.NODE_ENV === "production"
+    ? [process.env.CORS_ORIGIN]
+    : [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+      ];
 
 const io = socketIo(server, {
   cors: {
@@ -43,18 +50,20 @@ const io = socketIo(server, {
 connectDB();
 
 // Security Middleware (Applied BEFORE other middleware)
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" },
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:", "blob:"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'", "ws:", "wss:"],
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https:", "blob:"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        connectSrc: ["'self'", "ws:", "wss:"],
+      },
     },
-  },
-}));
+  })
+);
 
 // Apply general rate limiting to all requests
 app.use(generalLimiter);
@@ -80,19 +89,26 @@ app.use(
 );
 
 // Body parsing middleware with size limits
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Serve uploaded files with security headers
-app.use("/uploads", express.static(path.join(__dirname, "uploads"), {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.exe') || path.endsWith('.bat') || path.endsWith('.cmd')) {
-      res.status(403).end();
-      return;
-    }
-    res.set('X-Content-Type-Options', 'nosniff');
-  }
-}));
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "uploads"), {
+    setHeaders: (res, path) => {
+      if (
+        path.endsWith(".exe") ||
+        path.endsWith(".bat") ||
+        path.endsWith(".cmd")
+      ) {
+        res.status(403).end();
+        return;
+      }
+      res.set("X-Content-Type-Options", "nosniff");
+    },
+  })
+);
 
 // Make io available to routes
 app.use((req, res, next) => {
@@ -107,21 +123,21 @@ app.use("/api/messages", messageLimiter, messageRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
-  res.json({ 
-    status: "OK", 
+  res.json({
+    status: "OK",
     message: "MeowChat Backend is running!",
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
   });
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error occurred:', err.message);
-  
+  console.error("Error occurred:", err.message);
+
   // Don't leak error details in production
-  if (process.env.NODE_ENV === 'production') {
-    res.status(500).json({ error: 'Internal server error' });
+  if (process.env.NODE_ENV === "production") {
+    res.status(500).json({ error: "Internal server error" });
   } else {
     res.status(500).json({ error: err.message, stack: err.stack });
   }
@@ -129,7 +145,7 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({ error: "Route not found" });
 });
 
 // Socket.io connection handling
