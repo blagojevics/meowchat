@@ -67,11 +67,11 @@ router.post("/login", async (req, res) => {
 });
 
 // @route   POST /api/auth/firebase-login
-// @desc    Login with Firebase token (from Meowgram)
+// @desc    Login with Firebase token (from MeowGram) - UPDATED FOR MEOWGRAM INTEGRATION
 // @access  Public
 router.post("/firebase-login", async (req, res) => {
   try {
-    const { firebaseToken } = req.body;
+    const { firebaseToken, userData } = req.body;
 
     if (!firebaseToken) {
       console.log("❌ Firebase login failed: No token provided");
@@ -82,20 +82,47 @@ router.post("/firebase-login", async (req, res) => {
     }
 
     console.log(
-      "🔄 Processing Firebase login with token length:",
+      "🔄 Processing MeowGram Firebase login with token length:",
       firebaseToken.length
     );
+    console.log(
+      "📋 User data from MeowGram:",
+      userData ? "✓ Provided" : "✗ Missing"
+    );
 
+    // Use hybridAuth service but enhance with MeowGram data
     const result = await hybridAuthService.login({ firebaseToken });
 
-    console.log("✅ Firebase login successful for user:", result.user.email);
+    // If userData is provided from MeowGram, update user info
+    if (userData && result.user) {
+      const updatedUser = await User.findByIdAndUpdate(
+        result.user.id,
+        {
+          displayName: userData.displayName || result.user.displayName,
+          photoURL: userData.photoURL || result.user.profilePicture,
+          lastLogin: new Date(),
+        },
+        { new: true }
+      );
+      result.user = {
+        ...result.user,
+        displayName: updatedUser.displayName,
+        profilePicture: updatedUser.profilePicture || updatedUser.photoURL,
+      };
+    }
+
+    console.log(
+      "✅ MeowGram Firebase login successful for user:",
+      result.user.email
+    );
 
     res.json({
       message: "Firebase login successful",
-      ...result,
+      token: result.token,
+      user: result.user,
     });
   } catch (error) {
-    console.error("❌ Firebase login error:", error.message);
+    console.error("❌ MeowGram Firebase login error:", error.message);
     console.error("Stack:", error.stack);
 
     let errorMessage = "Firebase login failed";

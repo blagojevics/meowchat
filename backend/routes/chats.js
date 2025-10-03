@@ -324,4 +324,50 @@ router.delete("/:chatId", auth, async (req, res) => {
   }
 });
 
+// @route   PUT /api/chats/:chatId/read
+// @desc    Mark chat as read (mark all messages as read)
+// @access  Private
+router.put("/:chatId/read", auth, async (req, res) => {
+  try {
+    const chatId = req.params.chatId;
+
+    // Check if chat exists and user is participant
+    const chat = await Chat.findById(chatId);
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    if (!chat.isParticipant(req.user._id)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // Mark all unread messages as read
+    await Message.updateMany(
+      {
+        chat: chatId,
+        "readBy.user": { $ne: req.user._id },
+        sender: { $ne: req.user._id }, // Don't mark own messages
+      },
+      {
+        $push: {
+          readBy: {
+            user: req.user._id,
+            readAt: new Date(),
+          },
+        },
+      }
+    );
+
+    console.log(`📖 User ${req.user.username} marked chat ${chatId} as read`);
+
+    res.json({
+      message: "Chat marked as read successfully",
+      chatId,
+    });
+  } catch (error) {
+    console.error("Mark chat as read error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;
