@@ -7,13 +7,19 @@ export default defineConfig({
   server: {
     port: 5173, // Use default Vite port 5173
     host: true, // Allow access from network
+    allowedHosts: [
+      "localhost",
+      "127.0.0.1",
+      "meowchat-frontend-vite-production.up.railway.app",
+      ".up.railway.app", // Allow all Railway subdomains
+    ],
     proxy: {
       "/api": {
-        target: "http://localhost:5000",
+        target: process.env.VITE_API_URL || "http://localhost:5000",
         changeOrigin: true,
       },
       "/socket.io": {
-        target: "http://localhost:5000",
+        target: process.env.VITE_API_URL || "http://localhost:5000",
         changeOrigin: true,
         ws: true,
       },

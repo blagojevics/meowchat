@@ -4,20 +4,58 @@ const socketIo = require("socket.io");
 const cors = require("cors");
 const helmet = require("helmet");
 const path = require("path");
+const fs = require("fs");
 
-// Load environment variables FIRST
-require("dotenv").config();
+// Load environment variables FIRST with explicit path
+const dotenv = require("dotenv");
+
+// Try multiple .env file locations
+const envPaths = [
+  path.join(__dirname, ".env"),
+  path.join(process.cwd(), ".env"),
+  path.join(process.cwd(), "backend", ".env"),
+];
+
+let envLoaded = false;
+for (const envPath of envPaths) {
+  if (fs.existsSync(envPath)) {
+    console.log(`📁 Loading .env from: ${envPath}`);
+    const result = dotenv.config({ path: envPath });
+    if (!result.error) {
+      envLoaded = true;
+      console.log(`✅ Environment variables loaded from: ${envPath}`);
+      break;
+    } else {
+      console.warn(`⚠️ Error loading ${envPath}:`, result.error.message);
+    }
+  }
+}
+
+if (!envLoaded) {
+  console.warn("⚠️ No .env file found, using system environment variables");
+  dotenv.config(); // Fallback to default behavior
+}
+
+// Debug: Show current working directory and __dirname
+console.log(`📍 Current working directory: ${process.cwd()}`);
+console.log(`📍 Script directory (__dirname): ${__dirname}`);
 
 // Validate critical environment variables
 const requiredEnvVars = ["MONGODB_URI", "JWT_SECRET", "FIREBASE_PROJECT_ID"];
-const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
+const missingEnvVars = requiredEnvVars.filter((envVar) => {
+  const value = process.env[envVar];
+  const exists = value && value.trim() !== "";
+  console.log(`🔍 Checking ${envVar}: ${exists ? "✅ SET" : "❌ MISSING"}`);
+  return !exists;
+});
 
 if (missingEnvVars.length > 0) {
   console.error("❌ Missing required environment variables:");
   missingEnvVars.forEach((envVar) => {
-    console.error(`   - ${envVar}`);
+    console.error(`   - ${envVar}: "${process.env[envVar] || "undefined"}"`);
   });
   console.error("📁 Please check your .env file in the backend directory");
+  console.error("🔍 Searched paths:", envPaths);
   process.exit(1);
 }
 
@@ -41,6 +79,7 @@ const server = http.createServer(app);
 
 // CORS origins for MeowGram integration
 const allowedOrigins = [
+  // Development origins
   "http://localhost:3000",
   "http://localhost:3001",
   "http://localhost:3002",
@@ -50,6 +89,14 @@ const allowedOrigins = [
   "http://127.0.0.1:3000",
   "http://127.0.0.1:5173",
   "http://127.0.0.1:5174",
+  // Production origins
+  "https://meowchat-backend-production-0763.up.railway.app",
+  "https://meowchat-frontend-vite-production.up.railway.app", // ✅ Your actual frontend domain
+  // Environment-based origins
+  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
+  ...(process.env.ADDITIONAL_ORIGINS
+    ? process.env.ADDITIONAL_ORIGINS.split(",")
+    : []),
 ];
 
 const io = socketIo(server, {
@@ -83,24 +130,51 @@ io.use(async (socket, next) => {
 // Connect to MongoDB
 connectDB();
 
+// Dynamic CSP configuration based on environment
+const isProduction = process.env.NODE_ENV === "production";
+const backendUrl =
+  process.env.BACKEND_URL ||
+  "https://meowchat-backend-production-0763.up.railway.app";
+
 // Middleware
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
     contentSecurityPolicy: {
       directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", "data:", "https:"],
-        connectSrc: ["'self'"],
+        defaultSrc: ["'self'", ...(isProduction ? [backendUrl] : [])],
+        styleSrc: ["'self'", "'unsafe-inline'", "https:", "data:"],
+        scriptSrc: [
+          "'self'",
+          ...(isProduction
+            ? ["'unsafe-inline'"]
+            : ["'unsafe-eval'", "'unsafe-inline'"]),
+        ],
+        imgSrc: ["'self'", "data:", "https:", "http:", "blob:", "*"],
+        connectSrc: [
+          "'self'",
+          "wss:",
+          "https:",
+          "ws:",
+          "http:",
+          ...(isProduction ? [backendUrl] : ["http://localhost:*"]),
+        ],
+        fontSrc: ["'self'", "https:", "data:"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'", "https:", "http:", "data:", "blob:"],
+        frameSrc: ["'self'"],
+        workerSrc: ["'self'", "blob:"],
+        manifestSrc: ["'self'"],
+        ...(isProduction ? { upgradeInsecureRequests: [] } : {}),
       },
     },
-    hsts: {
-      maxAge: 31536000,
-      includeSubDomains: true,
-      preload: true,
-    },
+    hsts: isProduction
+      ? {
+          maxAge: 31536000,
+          includeSubDomains: true,
+          preload: true,
+        }
+      : false,
   })
 );
 
@@ -131,6 +205,28 @@ app.use("/api/auth", authRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/upload", uploadRoutes);
+
+// Favicon route to prevent 404 errors
+app.get("/favicon.ico", (req, res) => {
+  res.status(204).end(); // No content response
+});
+
+// Root route for deployment verification
+app.get("/", (req, res) => {
+  res.json({
+    message: "🐱 MeowChat Backend is running!",
+    version: "1.0.0",
+    environment: process.env.NODE_ENV || "development",
+    endpoints: {
+      health: "/health",
+      api: "/api/health",
+      auth: "/api/auth",
+      chats: "/api/chats",
+      messages: "/api/messages",
+      upload: "/api/upload",
+    },
+  });
+});
 
 // Health check endpoint for MeowGram debugging
 app.get("/health", (req, res) => {
