@@ -30,6 +30,7 @@ const MessageInput = ({
   onCancelEdit,
   onCancelReply,
   onEdit,
+  isMobile = false,
 }) => {
   const [message, setMessage] = useState("");
   const [emojiAnchor, setEmojiAnchor] = useState(null);
@@ -223,10 +224,11 @@ const MessageInput = ({
     <Paper
       elevation={0}
       sx={{
-        p: 2,
-        borderTop: 1,
+        p: isMobile ? 1.5 : 2,
+        borderTop: isMobile ? 0 : 1,
         borderColor: "divider",
         borderRadius: 0,
+        bgcolor: "background.paper",
       }}
     >
       {/* Edit/Reply Indicator */}
@@ -256,29 +258,52 @@ const MessageInput = ({
         </Box>
       )}
 
-      <Box sx={{ display: "flex", alignItems: "flex-end", gap: 1 }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "flex-end",
+          gap: isMobile ? 0.5 : 1,
+        }}
+      >
         {/* File Upload Buttons */}
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-          <Tooltip title="Attach File">
-            <IconButton
-              size="small"
-              color="primary"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <AttachFile />
-            </IconButton>
-          </Tooltip>
+        {!isMobile ? (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <Tooltip title="Attach File">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <AttachFile />
+              </IconButton>
+            </Tooltip>
 
-          <Tooltip title="Attach Image">
+            <Tooltip title="Attach Image">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={() => imageInputRef.current?.click()}
+              >
+                <Image />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ) : (
+          /* Mobile: Show attach button */
+          <Tooltip title="Attach">
             <IconButton
               size="small"
               color="primary"
               onClick={() => imageInputRef.current?.click()}
+              sx={{
+                bgcolor: "action.hover",
+                "&:hover": { bgcolor: "action.selected" },
+              }}
             >
-              <Image />
+              <AttachFile />
             </IconButton>
           </Tooltip>
-        </Box>
+        )}
 
         {/* Message Input */}
         <TextField
@@ -299,6 +324,7 @@ const MessageInput = ({
                   <IconButton
                     onClick={(e) => setEmojiAnchor(e.currentTarget)}
                     edge="end"
+                    size={isMobile ? "small" : "medium"}
                   >
                     <EmojiEmotions />
                   </IconButton>
@@ -308,7 +334,21 @@ const MessageInput = ({
           }}
           sx={{
             "& .MuiOutlinedInput-root": {
-              borderRadius: 3,
+              borderRadius: isMobile ? 3 : 3,
+              bgcolor: "background.default",
+              "& fieldset": {
+                borderColor: isMobile ? "rgba(0,0,0,0.1)" : "divider",
+              },
+              "&:hover fieldset": {
+                borderColor: isMobile ? "rgba(0,0,0,0.2)" : "primary.main",
+              },
+              "&.Mui-focused fieldset": {
+                borderColor: isMobile ? "#075e54" : "primary.main",
+              },
+            },
+            "& .MuiInputBase-input": {
+              fontSize: isMobile ? "1rem" : "inherit",
+              padding: isMobile ? "12px 14px" : "16.5px 14px",
             },
           }}
         />
@@ -319,11 +359,22 @@ const MessageInput = ({
             color="primary"
             onClick={handleSendMessage}
             disabled={!message.trim()}
+            size={isMobile ? "medium" : "large"}
             sx={{
-              bgcolor: editingMessage ? "secondary.main" : "primary.main",
+              bgcolor: editingMessage
+                ? "secondary.main"
+                : isMobile
+                ? "#075e54"
+                : "primary.main",
               color: "white",
+              width: isMobile ? 40 : 48,
+              height: isMobile ? 40 : 48,
               "&:hover": {
-                bgcolor: editingMessage ? "secondary.dark" : "primary.dark",
+                bgcolor: editingMessage
+                  ? "secondary.dark"
+                  : isMobile
+                  ? "#064e45"
+                  : "primary.dark",
               },
               "&.Mui-disabled": {
                 bgcolor: "action.disabled",

@@ -10,6 +10,7 @@ const connectDB = require("./config/database");
 const authRoutes = require("./routes/auth");
 const chatRoutes = require("./routes/chats");
 const messageRoutes = require("./routes/messages");
+const uploadRoutes = require("./routes/upload_simple");
 const socketHandlers = require("./socket/socketHandlers");
 
 const app = express();
@@ -93,6 +94,7 @@ app.use((req, res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

@@ -16,6 +16,10 @@ import {
   Menu,
   MenuItem,
   Divider,
+  AppBar,
+  Toolbar,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
   Search,
@@ -30,11 +34,17 @@ import { useChats } from "../hooks/useChat";
 import { useAuth } from "../contexts/AuthContext";
 import { useSocket } from "../contexts/SocketContext";
 import CreateChatDialog from "./CreateChatDialog";
+import ThemeToggle from "./ThemeToggle";
+import meowchattLogo from "../assets/meowchatt.png";
 
-const ChatList = ({ selectedChatId, onChatSelect }) => {
+const ChatList = ({ selectedChatId, onChatSelect, isMobile = false }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState(null);
+
+  const theme = useTheme();
+  const isMobileDevice = useMediaQuery(theme.breakpoints.down("md"));
+  const shouldUseMobileLayout = isMobile || isMobileDevice;
 
   const { chats, loading, createChat, refreshChats } = useChats();
   const { user, logout } = useAuth();
@@ -139,58 +149,212 @@ const ChatList = ({ selectedChatId, onChatSelect }) => {
   }
 
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      {/* Header */}
-      <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-        <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-          <Avatar src={user?.profilePicture} sx={{ mr: 2 }}>
-            {user?.username?.[0]?.toUpperCase()}
-          </Avatar>
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6" fontWeight="bold">
-              {user?.username}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {user?.bio || "Available"}
-            </Typography>
-          </Box>
-          <IconButton onClick={handleMenuOpen}>
-            <MoreVert />
-          </IconButton>
-        </Box>
+    <Box
+      sx={{
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        bgcolor: "background.paper",
+      }}
+    >
+      {/* Mobile Header */}
+      {shouldUseMobileLayout ? (
+        <Box sx={{ bgcolor: "background.paper" }}>
+          {/* Top Header with Logo */}
+          <AppBar
+            position="static"
+            elevation={0}
+            sx={{
+              bgcolor: "background.paper",
+              borderBottom: 1,
+              borderColor: "divider",
+            }}
+          >
+            <Toolbar
+              sx={{
+                px: 2,
+                minHeight: "56px !important",
+                justifyContent: "center",
+              }}
+            >
+              <Box
+                component="img"
+                src={meowchattLogo}
+                alt="MeowChat"
+                sx={{
+                  height: 36,
+                  width: "auto",
+                  filter:
+                    theme.palette.mode === "dark"
+                      ? "brightness(0) invert(1)"
+                      : "none",
+                }}
+              />
+            </Toolbar>
+          </AppBar>
 
-        {/* Search and Add Chat */}
-        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+          {/* User Info Section */}
+          <Box
+            sx={{
+              px: 2,
+              py: 1.5,
+              borderBottom: 1,
+              borderColor: "divider",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Avatar
+              src={user?.profilePicture}
+              sx={{
+                mr: 2,
+                width: 40,
+                height: 40,
+                bgcolor: "primary.main",
+              }}
+            >
+              {user?.username?.[0]?.toUpperCase()}
+            </Avatar>
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 500,
+                  fontSize: "1rem",
+                  color: "text.primary",
+                  lineHeight: 1.2,
+                }}
+              >
+                {user?.username}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                  fontSize: "0.85rem",
+                  lineHeight: 1.2,
+                }}
+              >
+                {user?.bio || "Available"}
+              </Typography>
+            </Box>
+            <ThemeToggle size="small" />
+            <IconButton color="inherit" size="small" onClick={handleCreateChat}>
+              <Add />
+            </IconButton>
+            <IconButton color="inherit" size="small" onClick={handleMenuOpen}>
+              <MoreVert />
+            </IconButton>
+          </Box>
+        </Box>
+      ) : (
+        /* Desktop Header */
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+            <Avatar
+              src={user?.profilePicture}
+              sx={{ mr: 2, bgcolor: "primary.main" }}
+            >
+              {user?.username?.[0]?.toUpperCase()}
+            </Avatar>
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography variant="h6" fontWeight="bold">
+                {user?.username}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {user?.bio || "Available"}
+              </Typography>
+            </Box>
+            <ThemeToggle size="small" />
+            <IconButton onClick={handleMenuOpen}>
+              <MoreVert />
+            </IconButton>
+          </Box>
+
+          {/* Desktop Search and Add */}
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Search chats..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <IconButton
+              onClick={handleCreateChat}
+              sx={{
+                bgcolor: "primary.main",
+                color: "white",
+                "&:hover": { bgcolor: "primary.dark" },
+              }}
+            >
+              <Add />
+            </IconButton>
+          </Box>
+        </Box>
+      )}
+
+      {/* Mobile Search Bar */}
+      {shouldUseMobileLayout && (
+        <Box
+          sx={{
+            px: 2,
+            py: 1.5,
+            bgcolor: "background.paper",
+            borderBottom: 1,
+            borderColor: "divider",
+          }}
+        >
           <TextField
             fullWidth
             size="small"
-            placeholder="Search chats..."
+            placeholder="Search or start new chat"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Search />
+                  <Search color="action" />
                 </InputAdornment>
               ),
             }}
-          />
-          <IconButton
-            color="primary"
-            onClick={handleCreateChat}
             sx={{
-              bgcolor: "primary.main",
-              color: "white",
-              "&:hover": { bgcolor: "primary.dark" },
+              "& .MuiOutlinedInput-root": {
+                bgcolor: "background.default",
+                borderRadius: 2,
+                "& fieldset": {
+                  borderColor: "divider",
+                },
+                "&:hover fieldset": {
+                  borderColor: "text.secondary",
+                },
+                "&.Mui-focused fieldset": {
+                  borderColor: "primary.main",
+                },
+              },
+              "& .MuiInputBase-input": {
+                fontSize: "0.95rem",
+              },
             }}
-          >
-            <Add />
-          </IconButton>
+          />
         </Box>
-      </Box>
+      )}
 
       {/* Chat List */}
-      <Box sx={{ flexGrow: 1, overflow: "auto" }}>
+      <Box
+        sx={{
+          flexGrow: 1,
+          overflow: "auto",
+          bgcolor: "background.paper",
+        }}
+      >
         {filteredChats.length === 0 ? (
           <Box sx={{ p: 3, textAlign: "center" }}>
             <Typography color="text.secondary">
@@ -201,7 +365,11 @@ const ChatList = ({ selectedChatId, onChatSelect }) => {
                 variant="contained"
                 startIcon={<Add />}
                 onClick={handleCreateChat}
-                sx={{ mt: 2 }}
+                sx={{
+                  mt: 2,
+                  bgcolor: "primary.main",
+                  "&:hover": { bgcolor: "primary.dark" },
+                }}
               >
                 Start Chat
               </Button>
@@ -216,10 +384,15 @@ const ChatList = ({ selectedChatId, onChatSelect }) => {
                 selected={selectedChatId === chat._id}
                 onClick={() => onChatSelect(chat._id)}
                 sx={{
+                  px: shouldUseMobileLayout ? 2 : 2,
+                  py: shouldUseMobileLayout ? 1.5 : 1,
                   borderBottom: 1,
                   borderColor: "divider",
                   "&.Mui-selected": {
                     bgcolor: "action.selected",
+                  },
+                  "&:hover": {
+                    bgcolor: "action.hover",
                   },
                 }}
               >
@@ -233,7 +406,14 @@ const ChatList = ({ selectedChatId, onChatSelect }) => {
                       horizontal: "right",
                     }}
                   >
-                    <Avatar src={getChatAvatar(chat)}>
+                    <Avatar
+                      src={getChatAvatar(chat)}
+                      sx={{
+                        width: shouldUseMobileLayout ? 50 : 40,
+                        height: shouldUseMobileLayout ? 50 : 40,
+                        bgcolor: "primary.main",
+                      }}
+                    >
                       {chat.type === "group" ? (
                         <Group />
                       ) : (
@@ -245,28 +425,52 @@ const ChatList = ({ selectedChatId, onChatSelect }) => {
 
                 <ListItemText
                   primary={
-                    <Typography variant="subtitle1" fontWeight="medium">
-                      {getChatDisplayName(chat)}
-                    </Typography>
-                  }
-                  secondary={
                     <Box
-                      sx={{ display: "flex", alignItems: "center", mt: 0.5 }}
+                      sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
                     >
                       <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ flexGrow: 1, mr: 1 }}
-                        noWrap
+                        variant="subtitle1"
+                        fontWeight="medium"
+                        sx={{
+                          fontSize: shouldUseMobileLayout ? "1rem" : "0.95rem",
+                          color: "text.primary",
+                        }}
                       >
-                        {chat.lastMessage?.content || "No messages yet"}
+                        {getChatDisplayName(chat)}
                       </Typography>
                       {chat.lastActivity && (
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{
+                            fontSize: shouldUseMobileLayout
+                              ? "0.75rem"
+                              : "0.7rem",
+                            ml: 1,
+                          }}
+                        >
                           {formatMessageTime(chat.lastActivity)}
                         </Typography>
                       )}
                     </Box>
+                  }
+                  secondary={
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        mt: 0.5,
+                        fontSize: shouldUseMobileLayout ? "0.85rem" : "0.8rem",
+                        lineHeight: 1.2,
+                      }}
+                      noWrap
+                    >
+                      {chat.lastMessage?.content || "No messages yet"}
+                    </Typography>
                   }
                 />
               </ListItem>

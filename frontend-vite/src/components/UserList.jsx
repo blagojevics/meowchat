@@ -23,13 +23,14 @@ import {
   Person,
   Search,
   Chat,
+  ArrowBack,
 } from "@mui/icons-material";
 import { useChat } from "../hooks/useChat";
 import { useAuth } from "../contexts/AuthContext";
 import { useSocket } from "../contexts/SocketContext";
 import api from "../services/api";
 
-const UserList = ({ chatId, selectedUserId, onClose }) => {
+const UserList = ({ chatId, selectedUserId, onClose, onUserSelect }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -432,7 +433,7 @@ const UserList = ({ chatId, selectedUserId, onClose }) => {
             );
           })()}
 
-        {chat && chat.type === "group" && (
+        {chat && chat.type === "group" && !selectedUserId && (
           <Box>
             <Divider sx={{ my: 2 }} />
             <Typography variant="subtitle2" gutterBottom>
@@ -442,13 +443,196 @@ const UserList = ({ chatId, selectedUserId, onClose }) => {
               {chat.description || "No description"}
             </Typography>
             <Typography variant="subtitle2" gutterBottom>
-              Members
+              Members ({chat.participants.length})
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {chat.participants.length} members
-            </Typography>
+
+            {/* Group Members List */}
+            <List disablePadding>
+              {chat.participants.map((participant) => {
+                const userObj =
+                  typeof participant.user === "object"
+                    ? participant.user
+                    : null;
+                const isOnline = userObj ? onlineUsers.has(userObj._id) : false;
+                const isCurrentUser = userObj?._id === user._id;
+
+                return (
+                  <ListItem
+                    key={userObj?._id || participant._id}
+                    button={!isCurrentUser}
+                    onClick={() => {
+                      if (!isCurrentUser && userObj && onUserSelect) {
+                        onUserSelect(userObj._id);
+                      }
+                    }}
+                    sx={{
+                      py: 1,
+                      px: 0,
+                      borderRadius: 1,
+                      "&:hover": !isCurrentUser
+                        ? {
+                            bgcolor: "action.hover",
+                          }
+                        : {},
+                      cursor: isCurrentUser ? "default" : "pointer",
+                    }}
+                  >
+                    <ListItemAvatar>
+                      <Badge
+                        variant="dot"
+                        color="success"
+                        invisible={!isOnline}
+                        anchorOrigin={{
+                          vertical: "bottom",
+                          horizontal: "right",
+                        }}
+                      >
+                        <Avatar
+                          src={userObj?.profilePicture}
+                          sx={{ width: 40, height: 40 }}
+                        >
+                          {userObj?.username?.[0]?.toUpperCase()}
+                        </Avatar>
+                      </Badge>
+                    </ListItemAvatar>
+                    <ListItemText
+                      primary={
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Typography variant="subtitle2">
+                            {userObj?.username || "Unknown User"}
+                          </Typography>
+                          {isCurrentUser && (
+                            <Chip
+                              label="You"
+                              size="small"
+                              color="primary"
+                              variant="outlined"
+                              sx={{ fontSize: "0.7rem", height: 20 }}
+                            />
+                          )}
+                          {participant.role === "admin" && (
+                            <AdminPanelSettings
+                              sx={{ fontSize: 16, color: "primary.main" }}
+                            />
+                          )}
+                        </Box>
+                      }
+                      secondary={
+                        <Typography variant="caption" color="text.secondary">
+                          {isOnline ? "Online" : "Offline"}
+                        </Typography>
+                      }
+                    />
+                  </ListItem>
+                );
+              })}
+            </List>
           </Box>
         )}
+
+        {/* Show individual member info when selected */}
+        {chat &&
+          chat.type === "group" &&
+          selectedUserId &&
+          (() => {
+            const selectedParticipant = chat.participants.find((p) => {
+              const participantId =
+                typeof p.user === "object" ? p.user._id : p.user;
+              return participantId.toString() === selectedUserId.toString();
+            });
+
+            if (!selectedParticipant) return null;
+
+            const userObj =
+              typeof selectedParticipant.user === "object"
+                ? selectedParticipant.user
+                : null;
+            const isOnline = userObj ? onlineUsers.has(userObj._id) : false;
+
+            return (
+              <Box>
+                <Divider sx={{ my: 2 }} />
+
+                {/* Back button */}
+                <Button
+                  startIcon={<ArrowBack />}
+                  onClick={() => {
+                    if (onUserSelect) {
+                      onUserSelect(null);
+                    }
+                  }}
+                  sx={{ mb: 2 }}
+                  size="small"
+                >
+                  Back to group info
+                </Button>
+
+                <Typography variant="subtitle2" gutterBottom>
+                  Status
+                </Typography>
+                <Chip
+                  label={isOnline ? "Online" : "Offline"}
+                  color={isOnline ? "success" : "default"}
+                  variant="outlined"
+                  size="small"
+                  sx={{ mb: 2 }}
+                />
+
+                <Typography variant="subtitle2" gutterBottom>
+                  Email
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  {userObj?.email || "Not provided"}
+                </Typography>
+
+                {userObj?.bio && (
+                  <>
+                    <Typography variant="subtitle2" gutterBottom>
+                      About
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      paragraph
+                    >
+                      {userObj.bio}
+                    </Typography>
+                  </>
+                )}
+
+                <Typography variant="subtitle2" gutterBottom>
+                  Role
+                </Typography>
+                <Chip
+                  label={
+                    selectedParticipant.role === "admin" ? "Admin" : "Member"
+                  }
+                  color={
+                    selectedParticipant.role === "admin" ? "primary" : "default"
+                  }
+                  variant="outlined"
+                  size="small"
+                  icon={
+                    selectedParticipant.role === "admin" ? (
+                      <AdminPanelSettings />
+                    ) : (
+                      <Person />
+                    )
+                  }
+                  sx={{ mb: 2 }}
+                />
+
+                <Typography variant="subtitle2" gutterBottom>
+                  Joined
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {new Date(selectedParticipant.joinedAt).toLocaleDateString()}
+                </Typography>
+              </Box>
+            );
+          })()}
       </Box>
     </Box>
   );

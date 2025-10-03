@@ -2,13 +2,35 @@ const express = require("express");
 const Message = require("../models/Message");
 const Chat = require("../models/Chat");
 const { auth } = require("../middleware/auth");
-const upload = require("../middleware/upload");
+const multer = require("multer");
+const path = require("path");
+const {
+  uploadImage,
+  getThumbnailUrl,
+  getResponsiveUrls,
+} = require("../config/cloudinary");
 const {
   messageValidation,
   handleValidationErrors,
 } = require("../middleware/validation");
 
 const router = express.Router();
+
+// Configure multer for uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+});
 
 // @route   GET /api/messages/:chatId
 // @desc    Get messages for a specific chat
@@ -342,7 +364,7 @@ router.delete("/chat/:chatId/clear", auth, async (req, res) => {
 });
 
 // @route   POST /api/messages/:chatId/upload
-// @desc    Upload file/image with message
+// @desc    Upload file/image with message (Cloudinary for images, local for files)
 // @access  Private
 router.post(
   "/:chatId/upload",
@@ -368,6 +390,74 @@ router.post(
         return res.status(403).json({ message: "Access denied" });
       }
 
+      let fileData = {};
+
+      // Handle images - upload to Cloudinary
+      if (file.mimetype.startsWith("image/")) {
+        try {
+          // Read the uploaded file and convert to base64
+          const fs = require("fs");
+          const fileBuffer = fs.readFileSync(file.path);
+          const base64Data = fileBuffer.toString("base64");
+          const dataUri = `data:${file.mimetype};base64,${base64Data}`;
+
+          const cloudinaryResult = await uploadImage(
+            { buffer: dataUri },
+            {
+              folder: "meowchat/images",
+              resource_type: "image",
+              transformation: [
+                { width: 1200, height: 1200, crop: "limit" },
+                { quality: "auto:good" },
+                { fetch_format: "auto" },
+              ],
+            }
+          );
+
+          // Delete the local temp file
+          fs.unlinkSync(file.path);
+
+          console.log(
+            "📸 Image uploaded to Cloudinary:",
+            cloudinaryResult.secure_url
+          );
+
+          fileData = {
+            public_id: cloudinaryResult.public_id,
+            url: cloudinaryResult.secure_url,
+            thumbnail: getThumbnailUrl
+              ? getThumbnailUrl(cloudinaryResult.public_id)
+              : cloudinaryResult.secure_url,
+            responsive: getResponsiveUrls
+              ? getResponsiveUrls(cloudinaryResult.public_id)
+              : {},
+            originalName: file.originalname,
+            size: cloudinaryResult.bytes,
+            format: cloudinaryResult.format,
+            width: cloudinaryResult.width,
+            height: cloudinaryResult.height,
+            storage: "cloudinary",
+            type: "image",
+          };
+        } catch (error) {
+          console.error("❌ Cloudinary upload failed:", error);
+          return res.status(500).json({ message: "Image upload failed" });
+        }
+      } else {
+        // Handle other files - keep local storage
+        console.log("📎 File stored locally:", file.filename);
+
+        fileData = {
+          filename: file.filename,
+          url: `/uploads/${file.filename}`,
+          originalName: file.originalname,
+          size: file.size,
+          mimetype: file.mimetype,
+          storage: "local",
+          type: "file",
+        };
+      }
+
       // Generate unique message ID and hash
       const crypto = require("crypto");
       const messageId = crypto.randomUUID();
@@ -376,35 +466,47 @@ router.post(
         .update(`${messageId}${content}${req.user._id}${Date.now()}`)
         .digest("hex");
 
-      // Determine if it's an image or file
-      const isImage = file.mimetype.startsWith("image/");
-      const fileUrl = `/uploads/${file.filename}`;
+      console.log("📤 Creating message with file:", {
+        type: fileData.type,
+        storage: fileData.storage,
+        url: fileData.url,
+        user: req.user.username,
+      });
 
-      // Create message with file/image data
+      // Create message data
       const messageData = {
         content: content || "",
         sender: req.user._id,
         chat: chatId,
-        type: isImage ? "image" : "file",
+        type: fileData.type,
         messageId,
         messageHash,
       };
 
-      if (isImage) {
+      // Add file-specific data
+      if (fileData.type === "image") {
         messageData.image = {
-          url: fileUrl,
-          filename: file.originalname,
-          size: file.size,
+          url: fileData.url,
+          filename: fileData.originalName,
+          width: fileData.width,
+          height: fileData.height,
+          public_id: fileData.public_id,
+          thumbnail: fileData.thumbnail,
+          responsive: fileData.responsive,
+          storage: fileData.storage,
         };
       } else {
         messageData.file = {
-          url: fileUrl,
-          filename: file.originalname,
-          size: file.size,
-          mimeType: file.mimetype,
+          url: fileData.url,
+          filename: fileData.originalName,
+          originalName: fileData.originalName,
+          size: fileData.size,
+          mimetype: fileData.mimetype,
+          storage: fileData.storage,
         };
       }
 
+      // Create the message
       const message = new Message(messageData);
       await message.save();
 
@@ -416,16 +518,24 @@ router.post(
       // Populate message details
       await message.populate("sender", "username profilePicture");
 
+      console.log("✅ Message with Cloudinary file created successfully");
+
       // Emit socket event
       req.io.to(`chat_${chatId}`).emit("new_message", message);
 
       res.status(201).json({
-        message: "File uploaded successfully",
+        message: "File uploaded successfully to Cloudinary",
         data: message,
       });
     } catch (error) {
-      console.error("File upload error:", error);
-      res.status(500).json({ message: "Server error" });
+      console.error("❌ Cloudinary file upload error:", error);
+      res.status(500).json({
+        message: "Server error",
+        error:
+          process.env.NODE_ENV === "development"
+            ? error.message
+            : "Upload failed",
+      });
     }
   }
 );

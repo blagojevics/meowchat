@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Box, Paper } from "@mui/material";
+import { Box, Paper, useMediaQuery, useTheme, Slide } from "@mui/material";
 import ChatList from "./ChatList";
 import ChatWindow from "./ChatWindow";
 import UserList from "./UserList";
@@ -8,16 +8,30 @@ const ChatApp = () => {
   const [selectedChatId, setSelectedChatId] = useState(null);
   const [showUserInfo, setShowUserInfo] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState(null);
+  const [showChatList, setShowChatList] = useState(true); // For mobile navigation
+
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md")); // Mobile breakpoint
 
   const handleChatSelect = (chatId) => {
     setSelectedChatId(chatId);
-    setSelectedUserId(null); // Reset selected user when changing chats
+    setSelectedUserId(null);
+    if (isMobile) {
+      setShowChatList(false); // Hide chat list on mobile when chat is selected
+    }
+  };
+
+  const handleBackToChats = () => {
+    if (isMobile) {
+      setShowChatList(true);
+      setSelectedChatId(null);
+    }
   };
 
   const handleToggleUserInfo = () => {
     setShowUserInfo(!showUserInfo);
     if (!showUserInfo) {
-      setSelectedUserId(null); // Reset when closing
+      setSelectedUserId(null);
     }
   };
 
@@ -26,6 +40,103 @@ const ChatApp = () => {
     setShowUserInfo(true);
   };
 
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <Box
+        sx={{
+          height: "100vh",
+          width: "100vw",
+          position: "relative",
+          overflow: "hidden",
+          bgcolor: "background.default",
+        }}
+      >
+        {/* Chat List - Mobile */}
+        <Slide direction="right" in={showChatList} mountOnEnter unmountOnExit>
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              bgcolor: "background.paper",
+              zIndex: 1,
+            }}
+          >
+            <ChatList
+              selectedChatId={selectedChatId}
+              onChatSelect={handleChatSelect}
+              isMobile={true}
+            />
+          </Box>
+        </Slide>
+
+        {/* Chat Window - Mobile */}
+        <Slide
+          direction="left"
+          in={!showChatList && selectedChatId && !showUserInfo}
+          mountOnEnter
+          unmountOnExit
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              bgcolor: "background.paper",
+              zIndex: 2,
+            }}
+          >
+            <ChatWindow
+              chatId={selectedChatId}
+              onToggleUserInfo={handleToggleUserInfo}
+              showUserInfo={showUserInfo}
+              onUserClick={handleUserClick}
+              onBack={handleBackToChats}
+              isMobile={true}
+            />
+          </Box>
+        </Slide>
+
+        {/* User Info - Mobile */}
+        <Slide
+          direction="left"
+          in={!showChatList && selectedChatId && showUserInfo}
+          mountOnEnter
+          unmountOnExit
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              bgcolor: "background.paper",
+              zIndex: 3,
+            }}
+          >
+            <UserList
+              chatId={selectedChatId}
+              selectedUserId={selectedUserId}
+              onClose={() => {
+                setShowUserInfo(false);
+                setSelectedUserId(null);
+              }}
+              onUserSelect={(userId) => setSelectedUserId(userId)}
+              isMobile={true}
+            />
+          </Box>
+        </Slide>
+      </Box>
+    );
+  }
+
+  // Desktop Layout (existing)
   return (
     <Box
       sx={{
@@ -37,7 +148,6 @@ const ChatApp = () => {
         p: 2,
       }}
     >
-      {/* Main Container - Max 1000px width */}
       <Box
         sx={{
           width: "100%",
@@ -66,6 +176,7 @@ const ChatApp = () => {
           <ChatList
             selectedChatId={selectedChatId}
             onChatSelect={handleChatSelect}
+            isMobile={false}
           />
         </Box>
 
@@ -76,6 +187,7 @@ const ChatApp = () => {
             onToggleUserInfo={handleToggleUserInfo}
             showUserInfo={showUserInfo}
             onUserClick={handleUserClick}
+            isMobile={false}
           />
         </Box>
 
@@ -97,6 +209,7 @@ const ChatApp = () => {
                 setShowUserInfo(false);
                 setSelectedUserId(null);
               }}
+              onUserSelect={(userId) => setSelectedUserId(userId)}
             />
           </Box>
         )}

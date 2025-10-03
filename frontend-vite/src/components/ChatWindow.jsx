@@ -16,6 +16,10 @@ import {
   DialogContentText,
   DialogActions,
   Button,
+  AppBar,
+  Toolbar,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
   Info,
@@ -25,6 +29,9 @@ import {
   Block,
   Report,
   Clear,
+  ArrowBack,
+  Phone,
+  VideoCall,
 } from "@mui/icons-material";
 import MessageInput from "./MessageInput";
 import Message from "./Message";
@@ -37,6 +44,8 @@ const ChatWindow = ({
   onToggleUserInfo,
   showUserInfo,
   onUserClick,
+  onBack,
+  isMobile = false,
 }) => {
   console.log(
     "🐱 ChatWindow rendered with onUserClick:",
@@ -51,6 +60,10 @@ const ChatWindow = ({
   const [deleteChatDialog, setDeleteChatDialog] = useState(false);
   const [editingMessage, setEditingMessage] = useState(null);
   const [replyingTo, setReplyingTo] = useState(null);
+
+  const theme = useTheme();
+  const isMobileDevice = useMediaQuery(theme.breakpoints.down("md"));
+  const shouldUseMobileLayout = isMobile || isMobileDevice;
 
   const { user } = useAuth();
   const { joinChat, leaveChat, typingUsers } = useSocket();
@@ -306,9 +319,14 @@ const ChatWindow = ({
           alignItems: "center",
           justifyContent: "center",
           flexDirection: "column",
+          bgcolor: "background.default",
         }}
       >
-        <Typography variant="h5" color="text.secondary" gutterBottom>
+        <Typography
+          variant={shouldUseMobileLayout ? "h6" : "h5"}
+          color="text.secondary"
+          gutterBottom
+        >
           🐱 Welcome to MeowChat!
         </Typography>
         <Typography color="text.secondary">
@@ -326,6 +344,7 @@ const ChatWindow = ({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          bgcolor: "background.default",
         }}
       >
         <Typography>Loading chat...</Typography>
@@ -341,49 +360,117 @@ const ChatWindow = ({
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        bgcolor: "background.default",
       }}
     >
       {/* Chat Header */}
-      <Paper
-        elevation={0}
-        sx={{
-          p: 2,
-          borderBottom: 1,
-          borderColor: "divider",
-          borderRadius: 0,
-          flexShrink: 0,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center" }}>
-          <Avatar src={getChatAvatar()} sx={{ mr: 2 }}>
-            {getChatDisplayName()[0]?.toUpperCase()}
-          </Avatar>
+      {shouldUseMobileLayout ? (
+        <AppBar
+          position="static"
+          elevation={1}
+          sx={{
+            bgcolor: "background.paper",
+            color: "text.primary",
+            borderBottom: 1,
+            borderColor: "divider",
+          }}
+        >
+          <Toolbar sx={{ px: 1 }}>
+            <IconButton color="inherit" onClick={onBack} sx={{ mr: 1 }}>
+              <ArrowBack />
+            </IconButton>
 
-          <Box sx={{ flexGrow: 1 }}>
-            <Typography variant="h6" fontWeight="bold">
-              {getChatDisplayName()}
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontSize: "0.75rem" }}
+            <Avatar
+              src={getChatAvatar()}
+              sx={{
+                mr: 2,
+                width: 32,
+                height: 32,
+              }}
             >
-              {getChatStatus()}
-            </Typography>
+              {getChatDisplayName()[0]?.toUpperCase()}
+            </Avatar>
+
+            <Box
+              sx={{ flexGrow: 1, cursor: "pointer" }}
+              onClick={onToggleUserInfo}
+            >
+              <Typography
+                variant="subtitle1"
+                sx={{
+                  fontWeight: 600,
+                  fontSize: "1rem",
+                  lineHeight: 1.2,
+                }}
+              >
+                {getChatDisplayName()}
+              </Typography>
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: "0.75rem",
+                  opacity: 0.8,
+                  lineHeight: 1,
+                }}
+              >
+                {getChatStatus()}
+              </Typography>
+            </Box>
+
+            <IconButton color="inherit" size="small">
+              <VideoCall />
+            </IconButton>
+            <IconButton color="inherit" size="small">
+              <Phone />
+            </IconButton>
+            <IconButton color="inherit" size="small" onClick={handleMenuOpen}>
+              <MoreVert />
+            </IconButton>
+          </Toolbar>
+        </AppBar>
+      ) : (
+        /* Desktop Header */
+        <Paper
+          elevation={0}
+          sx={{
+            p: 2,
+            borderBottom: 1,
+            borderColor: "divider",
+            borderRadius: 0,
+            flexShrink: 0,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Avatar src={getChatAvatar()} sx={{ mr: 2 }}>
+              {getChatDisplayName()[0]?.toUpperCase()}
+            </Avatar>
+
+            <Box sx={{ flexGrow: 1 }}>
+              <Typography variant="h6" fontWeight="bold">
+                {getChatDisplayName()}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontSize: "0.75rem" }}
+              >
+                {getChatStatus()}
+              </Typography>
+            </Box>
+
+            <IconButton
+              onClick={onToggleUserInfo}
+              color={showUserInfo ? "primary" : "default"}
+            >
+              <Info />
+            </IconButton>
+
+            <IconButton onClick={handleMenuOpen}>
+              <MoreVert />
+            </IconButton>
           </Box>
-
-          <IconButton
-            onClick={onToggleUserInfo}
-            color={showUserInfo ? "primary" : "default"}
-          >
-            <Info />
-          </IconButton>
-
-          <IconButton onClick={handleMenuOpen}>
-            <MoreVert />
-          </IconButton>
-        </Box>
-      </Paper>
+        </Paper>
+      )}
 
       {/* Three-dot Menu */}
       <Menu
@@ -462,18 +549,19 @@ const ChatWindow = ({
         )}
       </Menu>
 
-      {/* Messages Container - Simplified */}
+      {/* Messages Container */}
       <Box
         ref={messagesContainerRef}
         sx={{
           flex: 1,
           overflowY: "auto",
           overflowX: "hidden",
-          padding: "16px",
-          backgroundColor: "#f5f5f5",
+          padding: shouldUseMobileLayout ? "8px" : "16px",
+          backgroundColor: "background.default",
+          backgroundImage: "none",
           display: "flex",
           flexDirection: "column",
-          gap: 1,
+          gap: shouldUseMobileLayout ? 0.5 : 1,
           minHeight: 0,
           maxHeight: "100%",
         }}
@@ -505,6 +593,7 @@ const ChatWindow = ({
                 onReply={handleReplyToMessage}
                 onUserClick={onUserClick}
                 chatType={chat?.type}
+                isMobile={shouldUseMobileLayout}
               />
             );
           })
@@ -519,7 +608,7 @@ const ChatWindow = ({
 
       {/* Message Input */}
       <Box sx={{ flexShrink: 0 }}>
-        <Divider />
+        {!shouldUseMobileLayout && <Divider />}
         <MessageInput
           chatId={chatId}
           onSendMessage={sendMessage}
@@ -528,6 +617,7 @@ const ChatWindow = ({
           onCancelEdit={handleCancelEdit}
           onCancelReply={handleCancelReply}
           onEdit={editMessage}
+          isMobile={shouldUseMobileLayout}
         />
       </Box>
 

@@ -38,6 +38,7 @@ const Message = ({
   onReply,
   onUserClick,
   chatType,
+  isMobile = false,
 }) => {
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
@@ -257,21 +258,23 @@ const Message = ({
         display: "flex",
         flexDirection: isOwn ? "row-reverse" : "row",
         alignItems: "flex-start",
-        px: 2,
-        py: showAvatar ? 1 : 0.25,
+        px: isMobile ? 1 : 2,
+        py: showAvatar ? (isMobile ? 0.75 : 1) : isMobile ? 0.125 : 0.25,
         "&:hover .message-actions": {
           opacity: 1,
         },
       }}
     >
       {/* Avatar */}
-      <Box sx={{ width: 40, mr: isOwn ? 0 : 1, ml: isOwn ? 1 : 0 }}>
+      <Box
+        sx={{ width: isMobile ? 32 : 40, mr: isOwn ? 0 : 1, ml: isOwn ? 1 : 0 }}
+      >
         {showAvatar && !isOwn && (
           <Avatar
             src={message.sender.profilePicture}
             sx={{
-              width: 32,
-              height: 32,
+              width: isMobile ? 28 : 32,
+              height: isMobile ? 28 : 32,
               cursor:
                 chatType === "group" && onUserClick ? "pointer" : "default",
               "&:hover":
@@ -297,7 +300,7 @@ const Message = ({
       {/* Message Content */}
       <Box
         sx={{
-          maxWidth: "70%",
+          maxWidth: isMobile ? "85%" : "70%",
           display: "flex",
           flexDirection: "column",
           alignItems: isOwn ? "flex-end" : "flex-start",
@@ -351,16 +354,23 @@ const Message = ({
 
         {/* Message Bubble */}
         <Paper
-          elevation={1}
+          elevation={isMobile ? 0 : 1}
           sx={{
-            p: 1.5,
+            p: isMobile ? 1.25 : 1.5,
             bgcolor: isOwn ? "primary.main" : "background.paper",
             color: isOwn ? "primary.contrastText" : "text.primary",
-            borderRadius: 2,
-            borderTopLeftRadius: isOwn || !showAvatar ? 2 : 0.5,
-            borderTopRightRadius: !isOwn || !showAvatar ? 2 : 0.5,
+            borderRadius: isMobile ? 3 : 2,
+            borderTopLeftRadius:
+              isOwn || !showAvatar ? (isMobile ? 3 : 2) : isMobile ? 1 : 0.5,
+            borderTopRightRadius:
+              !isOwn || !showAvatar ? (isMobile ? 3 : 2) : isMobile ? 1 : 0.5,
             position: "relative",
             wordBreak: "break-word",
+            maxWidth: "100%",
+            border: isMobile ? "1px solid rgba(0,0,0,0.08)" : "none",
+            boxShadow: isMobile
+              ? "0 1px 0.5px rgba(0,0,0,0.13)"
+              : "0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12)",
           }}
         >
           {/* Reply Preview */}

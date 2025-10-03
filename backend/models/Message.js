@@ -49,6 +49,12 @@ const messageSchema = new mongoose.Schema(
       filename: String,
       size: Number,
       mimetype: String,
+      // Cloudinary specific fields
+      cloudinary: {
+        public_id: String,
+        secure_url: String,
+        format: String,
+      },
     },
     // Encrypted image data
     encryptedImage: {
@@ -59,6 +65,19 @@ const messageSchema = new mongoose.Schema(
       filename: String,
       width: Number,
       height: Number,
+      // Cloudinary specific fields
+      cloudinary: {
+        public_id: String,
+        secure_url: String,
+        thumbnail: String,
+        responsive: {
+          thumbnail: String,
+          small: String,
+          medium: String,
+          large: String,
+        },
+        format: String,
+      },
     },
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,
