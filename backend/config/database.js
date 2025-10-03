@@ -62,17 +62,32 @@ const connectDB = async () => {
       console.error(
         "🔧 SOLUTION: Check your cluster hostname and internet connection"
       );
-    } else if (error.message.includes("IP address") || error.message.includes("whitelist") || error.message.includes("Could not connect to any servers")) {
-      console.error("🔧 SOLUTION: MongoDB Atlas IP Whitelist Issue (COMMON ON RAILWAY)");
+    } else if (
+      error.message.includes("IP address") ||
+      error.message.includes("whitelist") ||
+      error.message.includes("Could not connect to any servers")
+    ) {
+      console.error(
+        "🔧 SOLUTION: MongoDB Atlas IP Whitelist Issue (COMMON ON RAILWAY)"
+      );
       console.error("   1. Go to MongoDB Atlas → Network Access");
       console.error("   2. Click 'Add IP Address'");
-      console.error("   3. Add '0.0.0.0/0' to allow all IPs (REQUIRED FOR RAILWAY)");
+      console.error(
+        "   3. Add '0.0.0.0/0' to allow all IPs (REQUIRED FOR RAILWAY)"
+      );
       console.error("   4. Or try these Railway IP ranges:");
       console.error("      - Add 'Railway' as description");
       console.error("      - IP: 0.0.0.0/0 (simplest for Railway)");
-      console.error("   🚨 Railway uses dynamic IPs, so 0.0.0.0/0 is often required");
-    } else if (error.message.includes("timeout") || error.message.includes("ETIMEDOUT")) {
-      console.error("🔧 SOLUTION: Connection timeout - likely network or IP whitelist issue");
+      console.error(
+        "   🚨 Railway uses dynamic IPs, so 0.0.0.0/0 is often required"
+      );
+    } else if (
+      error.message.includes("timeout") ||
+      error.message.includes("ETIMEDOUT")
+    ) {
+      console.error(
+        "🔧 SOLUTION: Connection timeout - likely network or IP whitelist issue"
+      );
       console.error("   1. Check MongoDB Atlas IP whitelist");
       console.error("   2. Verify cluster is running (not paused)");
       console.error("   3. Check Railway network connectivity");
