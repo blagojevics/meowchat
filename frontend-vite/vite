@@ -1,0 +1,5 @@
+#!/bin/bash
+echo "🚨 EMERGENCY: Railway is trying to run Vite dev server!"
+echo "🔥 This should NEVER run in production!"
+echo "💀 Killing this process and trying Express server..."
+exit 1

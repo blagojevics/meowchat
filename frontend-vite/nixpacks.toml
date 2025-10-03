@@ -1,8 +1,17 @@
 [phases.build]
-cmds = ["npm run build"]
+cmds = [
+  "echo 'BUILDING WITH NIXPACKS'",
+  "npm install",
+  "npm run build",
+  "echo 'BUILD COMPLETE - DIST FOLDER:'",
+  "ls -la dist/"
+]
 
 [phases.start]
-cmd = "node server.js"
+cmd = "echo 'STARTING EXPRESS SERVER' && node server.js"
 
 [variables]
 NODE_ENV = "production"
+
+[providers]
+node = "18"

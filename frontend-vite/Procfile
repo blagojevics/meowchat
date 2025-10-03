@@ -1,1 +1,1 @@
-web: npm run build && node server.js
+web: echo "PROCFILE: STARTING EXPRESS SERVER NOT VITE" && npm run build && node server.js
