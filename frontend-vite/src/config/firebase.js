@@ -22,23 +22,14 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// Development mode: Use Firebase emulators if available
+// Production/Development mode logging
 if (import.meta.env.DEV) {
   console.log("🔥 Firebase initialized in development mode");
   console.log("📍 Auth Domain:", firebaseConfig.authDomain);
-
-  // Optional: Connect to emulators in development
-  // Uncomment these lines if you want to use Firebase emulators
-  /*
-  try {
-    connectAuthEmulator(auth, 'http://localhost:9099');
-    connectFirestoreEmulator(db, 'localhost', 8080);
-    connectStorageEmulator(storage, 'localhost', 9199);
-    console.log('🔧 Connected to Firebase emulators');
-  } catch (error) {
-    console.log('⚠️ Firebase emulators not available, using production');
-  }
-  */
+} else {
+  console.log("🔥 Firebase initialized in production mode");
+  console.log("� Auth Domain:", firebaseConfig.authDomain);
+  console.log("🌐 Current URL:", window.location.origin);
 }
 
 export default app;
