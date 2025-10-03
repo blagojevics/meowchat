@@ -1,11 +1,13 @@
-// Firebase configuration for MeowChat - Secure Environment-Based Setup
+// Firebase configuration for MeowChat (separate from Meowgram)
+// You can use the same Firebase project but different collections, or create a new project
+
 const admin = require("firebase-admin");
 
-// Initialize Firebase Admin with environment variables (secure)
+// Initialize Firebase Admin with environment variables or service account
 let firebaseApp;
 
 try {
-  // Use environment variables instead of exposed service account file
+  // Try to use environment variables first (more secure)
   if (
     process.env.FIREBASE_PROJECT_ID &&
     process.env.FIREBASE_PRIVATE_KEY &&
@@ -14,35 +16,47 @@ try {
     const serviceAccount = {
       type: "service_account",
       project_id: process.env.FIREBASE_PROJECT_ID,
-      private_key_id: process.env.FIREBASE_PRIVATE_KEY_ID,
-      private_key: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
       client_email: process.env.FIREBASE_CLIENT_EMAIL,
-      client_id: process.env.FIREBASE_CLIENT_ID,
-      auth_uri: "https://accounts.google.com/o/oauth2/auth",
-      token_uri: "https://oauth2.googleapis.com/token",
-      auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-      client_x509_cert_url: process.env.FIREBASE_CLIENT_CERT_URL,
     };
 
     firebaseApp = admin.initializeApp(
       {
         credential: admin.credential.cert(serviceAccount),
-        projectId: process.env.FIREBASE_PROJECT_ID,
+        projectId: serviceAccount.project_id,
       },
       "meowchat"
     );
 
     console.log("✅ Firebase Admin initialized successfully");
-    console.log(`🔥 Connected to project: ${process.env.FIREBASE_PROJECT_ID}`);
+    console.log(`🔥 Connected to project: ${serviceAccount.project_id}`);
   } else {
+    // Fallback to service account file (for development)
+    const path = require("path");
+    const serviceAccount = require(path.join(
+      __dirname,
+      "../serviceAccountKey.json"
+    ));
+
+    firebaseApp = admin.initializeApp(
+      {
+        credential: admin.credential.cert(serviceAccount),
+        projectId: serviceAccount.project_id,
+      },
+      "meowchat"
+    );
+
+    console.log("✅ Firebase Admin initialized successfully");
+    console.log(`🔥 Connected to project: ${serviceAccount.project_id}`);
+  }
+} catch (error) {
+  if (process.env.NODE_ENV === "development") {
     console.log("⚠️ Firebase environment variables not configured");
     console.log(
       "📝 Please set FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, and FIREBASE_CLIENT_EMAIL in .env"
     );
   }
-} catch (error) {
-  console.log("⚠️ Firebase Admin not initialized:", error.message);
-  console.log("📝 Please check your Firebase environment variables in .env");
+  console.log("� Firebase service initialized in bypass mode for development");
 }
 
 const db = firebaseApp ? admin.firestore(firebaseApp) : null;
