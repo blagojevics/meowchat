@@ -1,0 +1,14 @@
+node_modules
+src
+public
+*.log
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.DS_Store
+.vscode
+.git
+README.md
+vite.config.js
