@@ -53,6 +53,7 @@ export const chatAPI = {
   createChat: (chatData) => api.post("/chats", chatData),
   getChat: (chatId) => api.get(`/chats/${chatId}`),
   updateChat: (chatId, updateData) => api.put(`/chats/${chatId}`, updateData),
+  deleteChat: (chatId) => api.delete(`/chats/${chatId}`),
   addParticipants: (chatId, participants) =>
     api.post(`/chats/${chatId}/participants`, { participants }),
   removeParticipant: (chatId, userId) =>
@@ -68,6 +69,7 @@ export const messageAPI = {
   editMessage: (messageId, content) =>
     api.put(`/messages/${messageId}`, { content }),
   deleteMessage: (messageId) => api.delete(`/messages/${messageId}`),
+  clearMessages: (chatId) => api.delete(`/messages/chat/${chatId}/clear`),
   addReaction: (messageId, emoji) =>
     api.post(`/messages/${messageId}/reactions`, { emoji }),
   removeReaction: (messageId) => api.delete(`/messages/${messageId}/reactions`),

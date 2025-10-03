@@ -97,7 +97,11 @@ chatSchema.virtual("participantCount").get(function () {
 
 // Method to check if user is participant
 chatSchema.methods.isParticipant = function (userId) {
-  return this.participants.some((p) => p.user.toString() === userId.toString());
+  return this.participants.some((p) => {
+    // Handle both populated (object) and unpopulated (ObjectId) user field
+    const participantId = p.user._id || p.user;
+    return participantId.toString() === userId.toString();
+  });
 };
 
 // Method to get user role in chat

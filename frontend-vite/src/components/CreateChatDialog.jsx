@@ -119,8 +119,18 @@ const CreateChatDialog = ({ open, onClose, onChatCreated }) => {
 
       const response = await api.post("/chats", chatData);
 
+      // Handle both new and existing chats
+      const chat = response.data.chat;
+      const existed = response.data.existed;
+
+      if (existed) {
+        console.log("Chat already exists, redirecting...");
+      } else {
+        console.log("New chat created!");
+      }
+
       if (onChatCreated) {
-        onChatCreated(response.data.chat);
+        onChatCreated(chat);
       }
 
       handleClose();

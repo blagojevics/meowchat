@@ -55,15 +55,22 @@ router.post(
       if (type === "private") {
         const existingChat = await Chat.findOne({
           type: "private",
+          isArchived: false,
           $and: [
             { "participants.user": req.user._id },
             { "participants.user": participants[0] },
           ],
-        });
+        }).populate(
+          "participants.user",
+          "username profilePicture isOnline lastSeen"
+        );
 
         if (existingChat) {
-          return res.status(400).json({
-            message: "Private chat already exists with this user",
+          // Return the existing chat instead of error
+          return res.status(200).json({
+            message: "Chat already exists",
+            chat: existingChat,
+            existed: true,
           });
         }
       }
@@ -270,6 +277,49 @@ router.delete("/:chatId/participants/:userId", auth, async (req, res) => {
     });
   } catch (error) {
     console.error("Remove participant error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// @route   DELETE /api/chats/:chatId
+// @desc    Delete a chat (archive it)
+// @access  Private
+router.delete("/:chatId", auth, async (req, res) => {
+  try {
+    const chat = await Chat.findById(req.params.chatId);
+
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    // Check if user is a participant
+    if (!chat.isParticipant(req.user._id)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // For private chats, archive for the user
+    // For group chats, only admin can delete
+    if (chat.type === "group" && chat.getUserRole(req.user._id) !== "admin") {
+      return res
+        .status(403)
+        .json({ message: "Only admins can delete group chats" });
+    }
+
+    // Archive the chat instead of hard deleting
+    chat.isArchived = true;
+    await chat.save();
+
+    // Delete all messages in the chat
+    await Message.updateMany(
+      { chat: req.params.chatId },
+      { isDeleted: true, deletedAt: new Date() }
+    );
+
+    res.json({
+      message: "Chat deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete chat error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });

@@ -3,6 +3,7 @@ const http = require("http");
 const socketIo = require("socket.io");
 const cors = require("cors");
 const helmet = require("helmet");
+const path = require("path");
 require("dotenv").config();
 
 const connectDB = require("./config/database");
@@ -60,6 +61,9 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Make io available to routes
 app.use((req, res, next) => {

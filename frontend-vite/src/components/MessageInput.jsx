@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   TextField,
@@ -8,18 +8,30 @@ import {
   Tooltip,
   Popover,
   Grid,
-} from '@mui/material';
+  Chip,
+  Typography,
+} from "@mui/material";
 import {
   Send,
   EmojiEmotions,
   AttachFile,
   Image,
-} from '@mui/icons-material';
-import EmojiPicker from 'emoji-picker-react';
-import { useSocket } from '../contexts/SocketContext';
+  Close,
+  Edit as EditIcon,
+} from "@mui/icons-material";
+import EmojiPicker from "emoji-picker-react";
+import { useSocket } from "../contexts/SocketContext";
 
-const MessageInput = ({ chatId, onSendMessage }) => {
-  const [message, setMessage] = useState('');
+const MessageInput = ({
+  chatId,
+  onSendMessage,
+  editingMessage,
+  replyingTo,
+  onCancelEdit,
+  onCancelReply,
+  onEdit,
+}) => {
+  const [message, setMessage] = useState("");
   const [emojiAnchor, setEmojiAnchor] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
   const fileInputRef = useRef(null);
@@ -27,6 +39,13 @@ const MessageInput = ({ chatId, onSendMessage }) => {
   const typingTimeoutRef = useRef(null);
 
   const { startTyping, stopTyping } = useSocket();
+
+  // Set message when editing
+  useEffect(() => {
+    if (editingMessage) {
+      setMessage(editingMessage.content);
+    }
+  }, [editingMessage]);
 
   // Handle typing indicators
   useEffect(() => {
@@ -77,89 +96,182 @@ const MessageInput = ({ chatId, onSendMessage }) => {
     }
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     const trimmedMessage = message.trim();
-    
+
     if (!trimmedMessage || !chatId) return;
 
     // Stop typing indicator
     handleTypingStop();
 
-    // Send message
-    onSendMessage({
-      content: trimmedMessage,
-      type: 'text'
-    });
+    // Check if editing
+    if (editingMessage) {
+      if (onEdit) {
+        await onEdit(editingMessage._id, trimmedMessage);
+        onCancelEdit();
+      }
+    } else {
+      // Send new message (with reply if replying)
+      const messageData = {
+        content: trimmedMessage,
+        type: "text",
+      };
+
+      if (replyingTo) {
+        messageData.replyTo = replyingTo._id;
+      }
+
+      onSendMessage(messageData);
+
+      if (replyingTo && onCancelReply) {
+        onCancelReply();
+      }
+    }
 
     // Clear input
-    setMessage('');
+    setMessage("");
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
   const handleEmojiClick = (emojiData) => {
-    setMessage(prev => prev + emojiData.emoji);
+    setMessage((prev) => prev + emojiData.emoji);
     setEmojiAnchor(null);
-    
+
     // Focus back on input
     setTimeout(() => {
-      document.getElementById('message-input')?.focus();
+      document.getElementById("message-input")?.focus();
     }, 100);
   };
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // TODO: Implement file upload
-    console.log('File upload:', file);
-    
-    // Reset file input
-    event.target.value = '';
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("content", `📎 ${file.name}`);
+      formData.append("type", "file");
+
+      // Upload file to backend
+      const response = await fetch(
+        `http://localhost:5000/api/messages/${chatId}/upload`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("File uploaded successfully:", data);
+      } else {
+        console.error("File upload failed");
+      }
+    } catch (error) {
+      console.error("File upload error:", error);
+    } finally {
+      event.target.value = "";
+    }
   };
 
-  const handleImageUpload = (event) => {
+  const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // TODO: Implement image upload
-    console.log('Image upload:', file);
-    
-    // Reset file input
-    event.target.value = '';
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("content", "");
+      formData.append("type", "image");
+
+      // Upload image to backend
+      const response = await fetch(
+        `http://localhost:5000/api/messages/${chatId}/upload`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Image uploaded successfully:", data);
+      } else {
+        console.error("Image upload failed");
+      }
+    } catch (error) {
+      console.error("Image upload error:", error);
+    } finally {
+      event.target.value = "";
+    }
   };
 
   return (
-    <Paper 
-      elevation={0} 
-      sx={{ 
-        p: 2, 
-        borderTop: 1, 
-        borderColor: 'divider',
-        borderRadius: 0
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        borderTop: 1,
+        borderColor: "divider",
+        borderRadius: 0,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 1 }}>
+      {/* Edit/Reply Indicator */}
+      {(editingMessage || replyingTo) && (
+        <Box sx={{ mb: 1, display: "flex", alignItems: "center", gap: 1 }}>
+          {editingMessage && (
+            <Chip
+              icon={<EditIcon />}
+              label={`Editing: ${editingMessage.content.substring(0, 50)}...`}
+              onDelete={onCancelEdit}
+              color="primary"
+              variant="outlined"
+              size="small"
+            />
+          )}
+          {replyingTo && (
+            <Chip
+              label={`Replying to: ${
+                replyingTo.sender.username
+              } - ${replyingTo.content.substring(0, 40)}...`}
+              onDelete={onCancelReply}
+              color="secondary"
+              variant="outlined"
+              size="small"
+            />
+          )}
+        </Box>
+      )}
+
+      <Box sx={{ display: "flex", alignItems: "flex-end", gap: 1 }}>
         {/* File Upload Buttons */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
           <Tooltip title="Attach File">
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               color="primary"
               onClick={() => fileInputRef.current?.click()}
             >
               <AttachFile />
             </IconButton>
           </Tooltip>
-          
+
           <Tooltip title="Attach Image">
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               color="primary"
               onClick={() => imageInputRef.current?.click()}
             >
@@ -195,31 +307,31 @@ const MessageInput = ({ chatId, onSendMessage }) => {
             ),
           }}
           sx={{
-            '& .MuiOutlinedInput-root': {
+            "& .MuiOutlinedInput-root": {
               borderRadius: 3,
             },
           }}
         />
 
-        {/* Send Button */}
-        <Tooltip title="Send Message">
+        {/* Send/Update Button */}
+        <Tooltip title={editingMessage ? "Update Message" : "Send Message"}>
           <IconButton
             color="primary"
             onClick={handleSendMessage}
             disabled={!message.trim()}
             sx={{
-              bgcolor: 'primary.main',
-              color: 'white',
-              '&:hover': {
-                bgcolor: 'primary.dark',
+              bgcolor: editingMessage ? "secondary.main" : "primary.main",
+              color: "white",
+              "&:hover": {
+                bgcolor: editingMessage ? "secondary.dark" : "primary.dark",
               },
-              '&.Mui-disabled': {
-                bgcolor: 'action.disabled',
-                color: 'action.disabled',
+              "&.Mui-disabled": {
+                bgcolor: "action.disabled",
+                color: "action.disabled",
               },
             }}
           >
-            <Send />
+            {editingMessage ? <EditIcon /> : <Send />}
           </IconButton>
         </Tooltip>
       </Box>
@@ -230,12 +342,12 @@ const MessageInput = ({ chatId, onSendMessage }) => {
         anchorEl={emojiAnchor}
         onClose={() => setEmojiAnchor(null)}
         anchorOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
+          vertical: "top",
+          horizontal: "right",
         }}
         transformOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
+          vertical: "bottom",
+          horizontal: "right",
         }}
       >
         <EmojiPicker
@@ -253,15 +365,15 @@ const MessageInput = ({ chatId, onSendMessage }) => {
         type="file"
         ref={fileInputRef}
         onChange={handleFileUpload}
-        style={{ display: 'none' }}
+        style={{ display: "none" }}
         accept="*/*"
       />
-      
+
       <input
         type="file"
         ref={imageInputRef}
         onChange={handleImageUpload}
-        style={{ display: 'none' }}
+        style={{ display: "none" }}
         accept="image/*"
       />
     </Paper>

@@ -29,7 +29,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useSocket } from "../contexts/SocketContext";
 import api from "../services/api";
 
-const UserList = ({ chatId, onClose }) => {
+const UserList = ({ chatId, selectedUserId, onClose }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -177,24 +177,42 @@ const UserList = ({ chatId, onClose }) => {
     );
   }
 
-  // Original chat participants view
-  if (!chat) {
-    return (
-      <Box sx={{ p: 2 }}>
-        <Typography>Loading...</Typography>
-      </Box>
-    );
-  }
-
-  const isUserOnline = (userId) => {
-    return onlineUsers.has(userId);
-  };
-
-  const getUserRole = (participant) => {
-    return participant.role;
-  };
-
+  // Show current user's profile info
   const getChatInfo = () => {
+    if (!chat) {
+      return {
+        title: "Loading...",
+        subtitle: "",
+        avatar: "",
+        icon: <Person />,
+      };
+    }
+
+    // If a specific user is selected (in group chat), show that user
+    if (selectedUserId && chat.type === "group") {
+      const selectedParticipant = chat.participants.find((p) => {
+        const participantId = typeof p.user === "object" ? p.user._id : p.user;
+        return participantId.toString() === selectedUserId.toString();
+      });
+
+      if (selectedParticipant) {
+        const userObj =
+          typeof selectedParticipant.user === "object"
+            ? selectedParticipant.user
+            : null;
+
+        const isOnline = userObj ? onlineUsers.has(userObj._id) : false;
+
+        return {
+          title: userObj?.username || "User",
+          subtitle: isOnline ? "Online" : "Offline",
+          avatar: userObj?.profilePicture,
+          icon: <Person />,
+          isGroupMember: true,
+        };
+      }
+    }
+
     if (chat.type === "group") {
       return {
         title: chat.name || "Group Chat",
@@ -202,23 +220,53 @@ const UserList = ({ chatId, onClose }) => {
         avatar: chat.chatImage,
         icon: <Group />,
       };
-    } else {
-      const otherParticipant = chat.participants.find(
-        (p) => p.user._id !== user._id
-      );
+    }
 
+    // Show the OTHER participant's information
+    const otherParticipant = chat.participants.find((p) => {
+      const participantId = typeof p.user === "object" ? p.user._id : p.user;
+      return participantId.toString() !== user._id.toString();
+    });
+
+    if (!otherParticipant) {
       return {
-        title: otherParticipant?.user.username || "Unknown User",
-        subtitle: isUserOnline(otherParticipant?.user._id)
-          ? "Online"
-          : "Offline",
-        avatar: otherParticipant?.user.profilePicture,
+        title: "Unknown User",
+        subtitle: "Offline",
+        avatar: "",
         icon: <Person />,
       };
     }
+
+    const userObj =
+      typeof otherParticipant.user === "object" ? otherParticipant.user : null;
+
+    const isOnline = userObj ? onlineUsers.has(userObj._id) : false;
+
+    return {
+      title: userObj?.username || "User",
+      subtitle: isOnline ? "Online" : "Offline",
+      avatar: userObj?.profilePicture,
+      icon: <Person />,
+    };
   };
 
   const chatInfo = getChatInfo();
+
+  // Show loading state
+  if (!chat && chatId) {
+    return (
+      <Box
+        sx={{
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -226,14 +274,14 @@ const UserList = ({ chatId, onClose }) => {
       <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
-            Chat Info
+            {chatInfo.isGroupMember ? "User Info" : "Chat Info"}
           </Typography>
           <IconButton onClick={onClose} size="small">
             <Close />
           </IconButton>
         </Box>
 
-        {/* Chat Avatar and Info */}
+        {/* User Avatar and Info */}
         <Box sx={{ textAlign: "center", mb: 2 }}>
           <Avatar
             src={chatInfo.avatar}
@@ -254,110 +302,20 @@ const UserList = ({ chatId, onClose }) => {
             {chatInfo.subtitle}
           </Typography>
         </Box>
-
-        {/* Chat Description (for groups) */}
-        {chat.type === "group" && chat.description && (
-          <Box sx={{ mt: 2 }}>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              textAlign="center"
-            >
-              {chat.description}
-            </Typography>
-          </Box>
-        )}
       </Box>
 
-      {/* Participants List (for group chats) */}
-      {chat.type === "group" && (
-        <Box sx={{ flexGrow: 1, overflow: "auto" }}>
-          <Box sx={{ p: 2, pb: 1 }}>
-            <Typography variant="subtitle1" fontWeight="bold">
-              Members ({chat.participants.length})
-            </Typography>
-          </Box>
-
-          <List disablePadding>
-            {chat.participants.map((participant) => {
-              const isOnline = isUserOnline(participant.user._id);
-              const isCurrentUser = participant.user._id === user._id;
-              const role = getUserRole(participant);
-
-              return (
-                <ListItem key={participant.user._id} sx={{ px: 2 }}>
-                  <ListItemAvatar>
-                    <Badge
-                      variant="dot"
-                      color="success"
-                      invisible={!isOnline}
-                      anchorOrigin={{
-                        vertical: "bottom",
-                        horizontal: "right",
-                      }}
-                    >
-                      <Avatar src={participant.user.profilePicture}>
-                        {participant.user.username[0]?.toUpperCase()}
-                      </Avatar>
-                    </Badge>
-                  </ListItemAvatar>
-
-                  <ListItemText
-                    primary={
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <Typography variant="subtitle2">
-                          {participant.user.username}
-                          {isCurrentUser && " (You)"}
-                        </Typography>
-                        {role === "admin" && (
-                          <Chip
-                            label="Admin"
-                            size="small"
-                            color="primary"
-                            variant="outlined"
-                            icon={<AdminPanelSettings />}
-                            sx={{ height: 20, fontSize: "0.7rem" }}
-                          />
-                        )}
-                      </Box>
-                    }
-                    secondary={
-                      <Box>
-                        <Typography variant="caption" color="text.secondary">
-                          {isOnline ? "Online" : "Offline"}
-                        </Typography>
-                        {participant.user.bio && (
-                          <Typography
-                            variant="caption"
-                            display="block"
-                            color="text.secondary"
-                          >
-                            {participant.user.bio}
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                  />
-                </ListItem>
-              );
-            })}
-          </List>
-        </Box>
-      )}
-
-      {/* Private Chat User Info */}
-      {chat.type === "private" && (
-        <Box sx={{ flexGrow: 1, p: 2 }}>
-          {(() => {
+      {/* User Details */}
+      <Box sx={{ flexGrow: 1, p: 2 }}>
+        {chat &&
+          chat.type === "private" &&
+          (() => {
             const otherParticipant = chat.participants.find(
               (p) => p.user._id !== user._id
             );
 
             if (!otherParticipant) return null;
 
-            const isOnline = isUserOnline(otherParticipant.user._id);
+            const isOnline = onlineUsers.has(otherParticipant.user._id);
 
             return (
               <Box>
@@ -373,6 +331,13 @@ const UserList = ({ chatId, onClose }) => {
                   size="small"
                   sx={{ mb: 2 }}
                 />
+
+                <Typography variant="subtitle2" gutterBottom>
+                  Email
+                </Typography>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                  {otherParticipant.user.email || "Not provided"}
+                </Typography>
 
                 {otherParticipant.user.bio && (
                   <>
@@ -398,8 +363,25 @@ const UserList = ({ chatId, onClose }) => {
               </Box>
             );
           })()}
-        </Box>
-      )}
+
+        {chat && chat.type === "group" && (
+          <Box>
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="subtitle2" gutterBottom>
+              Description
+            </Typography>
+            <Typography variant="body2" color="text.secondary" paragraph>
+              {chat.description || "No description"}
+            </Typography>
+            <Typography variant="subtitle2" gutterBottom>
+              Members
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {chat.participants.length} members
+            </Typography>
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 };

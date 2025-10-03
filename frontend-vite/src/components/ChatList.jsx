@@ -31,7 +31,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useSocket } from "../contexts/SocketContext";
 import CreateChatDialog from "./CreateChatDialog";
 
-const ChatList = ({ selectedChatId, onChatSelect, onShowUserList }) => {
+const ChatList = ({ selectedChatId, onChatSelect }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState(null);
@@ -159,21 +159,34 @@ const ChatList = ({ selectedChatId, onChatSelect, onShowUserList }) => {
           </IconButton>
         </Box>
 
-        {/* Search */}
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Search chats..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
-          }}
-        />
+        {/* Search and Add Chat */}
+        <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search chats..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }}
+          />
+          <IconButton
+            color="primary"
+            onClick={handleCreateChat}
+            sx={{
+              bgcolor: "primary.main",
+              color: "white",
+              "&:hover": { bgcolor: "primary.dark" },
+            }}
+          >
+            <Add />
+          </IconButton>
+        </Box>
       </Box>
 
       {/* Chat List */}
@@ -262,31 +275,12 @@ const ChatList = ({ selectedChatId, onChatSelect, onShowUserList }) => {
         )}
       </Box>
 
-      {/* Floating Action Button */}
-      <Fab
-        color="primary"
-        aria-label="create chat"
-        onClick={handleCreateChat}
-        sx={{
-          position: "absolute",
-          bottom: 16,
-          right: 16,
-        }}
-      >
-        <Add />
-      </Fab>
-
       {/* Menu */}
       <Menu
         anchorEl={menuAnchor}
         open={Boolean(menuAnchor)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={onShowUserList}>
-          <Person sx={{ mr: 1 }} />
-          Online Users
-        </MenuItem>
-        <Divider />
         <MenuItem onClick={handleLogout}>
           <Logout sx={{ mr: 1 }} />
           Logout

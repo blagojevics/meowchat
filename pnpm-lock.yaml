@@ -38,7 +38,7 @@ importers:
         specifier: ^7.5.0
         version: 7.8.7
       multer:
-        specifier: ^1.4.5-lts.1
+        specifier: 1.4.5-lts.2
         version: 1.4.5-lts.2
       socket.io:
         specifier: ^4.7.2

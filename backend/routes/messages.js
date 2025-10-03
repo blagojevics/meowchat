@@ -2,6 +2,7 @@ const express = require("express");
 const Message = require("../models/Message");
 const Chat = require("../models/Chat");
 const { auth } = require("../middleware/auth");
+const upload = require("../middleware/upload");
 const {
   messageValidation,
   handleValidationErrors,
@@ -305,5 +306,128 @@ router.delete("/:messageId/reactions", auth, async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+// @route   DELETE /api/messages/chat/:chatId/clear
+// @desc    Clear all messages in a chat
+// @access  Private
+router.delete("/chat/:chatId/clear", auth, async (req, res) => {
+  try {
+    const chatId = req.params.chatId;
+
+    // Check if chat exists and user is participant
+    const chat = await Chat.findById(chatId);
+    if (!chat) {
+      return res.status(404).json({ message: "Chat not found" });
+    }
+
+    if (!chat.isParticipant(req.user._id)) {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // Soft delete all messages in the chat
+    await Message.updateMany(
+      { chat: chatId },
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+        content: "This message was deleted",
+      }
+    );
+
+    res.json({ message: "Chat cleared successfully" });
+  } catch (error) {
+    console.error("Clear chat error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// @route   POST /api/messages/:chatId/upload
+// @desc    Upload file/image with message
+// @access  Private
+router.post(
+  "/:chatId/upload",
+  auth,
+  upload.single("file"),
+  async (req, res) => {
+    try {
+      const chatId = req.params.chatId;
+      const file = req.file;
+      const { content, type } = req.body;
+
+      if (!file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      // Check if chat exists and user is participant
+      const chat = await Chat.findById(chatId);
+      if (!chat) {
+        return res.status(404).json({ message: "Chat not found" });
+      }
+
+      if (!chat.isParticipant(req.user._id)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      // Generate unique message ID and hash
+      const crypto = require("crypto");
+      const messageId = crypto.randomUUID();
+      const messageHash = crypto
+        .createHash("sha256")
+        .update(`${messageId}${content}${req.user._id}${Date.now()}`)
+        .digest("hex");
+
+      // Determine if it's an image or file
+      const isImage = file.mimetype.startsWith("image/");
+      const fileUrl = `/uploads/${file.filename}`;
+
+      // Create message with file/image data
+      const messageData = {
+        content: content || "",
+        sender: req.user._id,
+        chat: chatId,
+        type: isImage ? "image" : "file",
+        messageId,
+        messageHash,
+      };
+
+      if (isImage) {
+        messageData.image = {
+          url: fileUrl,
+          filename: file.originalname,
+          size: file.size,
+        };
+      } else {
+        messageData.file = {
+          url: fileUrl,
+          filename: file.originalname,
+          size: file.size,
+          mimeType: file.mimetype,
+        };
+      }
+
+      const message = new Message(messageData);
+      await message.save();
+
+      // Update chat's last message
+      chat.lastMessage = message._id;
+      chat.lastActivity = new Date();
+      await chat.save();
+
+      // Populate message details
+      await message.populate("sender", "username profilePicture");
+
+      // Emit socket event
+      req.io.to(`chat_${chatId}`).emit("new_message", message);
+
+      res.status(201).json({
+        message: "File uploaded successfully",
+        data: message,
+      });
+    } catch (error) {
+      console.error("File upload error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
 
 module.exports = router;

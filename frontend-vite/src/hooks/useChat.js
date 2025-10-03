@@ -216,6 +216,24 @@ export const useChat = (chatId) => {
     }
   }, []);
 
+  // Delete chat
+  const deleteChat = useCallback(async () => {
+    if (!chatId) return { success: false, error: "No chat selected" };
+
+    try {
+      await chatAPI.deleteChat(chatId);
+      // Redirect or update UI
+      window.location.href = "/";
+      return { success: true };
+    } catch (err) {
+      console.error("Failed to delete chat:", err);
+      return {
+        success: false,
+        error: err.response?.data?.message || "Failed to delete chat",
+      };
+    }
+  }, [chatId]);
+
   // Socket event handlers
   useEffect(() => {
     if (socket && chatId) {
@@ -282,6 +300,7 @@ export const useChat = (chatId) => {
     addReaction,
     editMessage,
     deleteMessage,
+    deleteChat,
     loadMoreMessages,
     refreshChat: fetchChat,
     refreshMessages: () => fetchMessages(1, false),

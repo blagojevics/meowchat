@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   Box,
   Avatar,
@@ -9,35 +9,52 @@ import {
   MenuItem,
   Chip,
   Tooltip,
-} from '@mui/material';
+  Dialog,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  DialogActions,
+  Button,
+} from "@mui/material";
 import {
   MoreVert,
   Edit,
   Delete,
   Reply,
   EmojiEmotions,
-} from '@mui/icons-material';
-import { format, isToday, isYesterday } from 'date-fns';
-import { useAuth } from '../contexts/AuthContext';
-import { useSocket } from '../contexts/SocketContext';
+} from "@mui/icons-material";
+import { format, isToday, isYesterday } from "date-fns";
+import { useAuth } from "../contexts/AuthContext";
+import { useSocket } from "../contexts/SocketContext";
 
-const Message = ({ message, showAvatar, isOwn }) => {
+const Message = ({
+  message,
+  showAvatar,
+  isOwn,
+  onEdit,
+  onDelete,
+  onReply,
+  onUserClick,
+  chatType,
+}) => {
   const [menuAnchor, setMenuAnchor] = useState(null);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const { user } = useAuth();
   const { addReaction } = useSocket();
 
   const formatMessageTime = (date) => {
     const messageDate = new Date(date);
-    
+
     if (isToday(messageDate)) {
-      return format(messageDate, 'HH:mm');
+      return format(messageDate, "HH:mm");
     }
-    
+
     if (isYesterday(messageDate)) {
-      return `Yesterday ${format(messageDate, 'HH:mm')}`;
+      return `Yesterday ${format(messageDate, "HH:mm")}`;
     }
-    
-    return format(messageDate, 'MMM dd, HH:mm');
+
+    return format(messageDate, "MMM dd, HH:mm");
   };
 
   const handleMenuOpen = (event) => {
@@ -54,21 +71,29 @@ const Message = ({ message, showAvatar, isOwn }) => {
   };
 
   const handleEdit = () => {
-    // TODO: Implement message editing
-    console.log('Edit message:', message._id);
     handleMenuClose();
+    if (onEdit) {
+      onEdit(message);
+    }
   };
 
   const handleDelete = () => {
-    // TODO: Implement message deletion
-    console.log('Delete message:', message._id);
     handleMenuClose();
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    setDeleteConfirmOpen(false);
+    if (onDelete) {
+      await onDelete(message._id);
+    }
   };
 
   const handleReply = () => {
-    // TODO: Implement message reply
-    console.log('Reply to message:', message._id);
     handleMenuClose();
+    if (onReply) {
+      onReply(message);
+    }
   };
 
   const renderReactions = () => {
@@ -85,24 +110,24 @@ const Message = ({ message, showAvatar, isOwn }) => {
     }, {});
 
     return (
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.5 }}>
         {Object.entries(reactionGroups).map(([emoji, reactions]) => {
-          const userReacted = reactions.some(r => r.user === user._id);
-          
+          const userReacted = reactions.some((r) => r.user === user._id);
+
           return (
             <Chip
               key={emoji}
               label={`${emoji} ${reactions.length}`}
               size="small"
-              variant={userReacted ? 'filled' : 'outlined'}
-              color={userReacted ? 'primary' : 'default'}
+              variant={userReacted ? "filled" : "outlined"}
+              color={userReacted ? "primary" : "default"}
               onClick={() => handleReaction(emoji)}
               sx={{
                 height: 24,
-                fontSize: '0.75rem',
-                cursor: 'pointer',
-                '&:hover': {
-                  bgcolor: userReacted ? 'primary.dark' : 'action.hover',
+                fontSize: "0.75rem",
+                cursor: "pointer",
+                "&:hover": {
+                  bgcolor: userReacted ? "primary.dark" : "action.hover",
                 },
               }}
             />
@@ -115,48 +140,81 @@ const Message = ({ message, showAvatar, isOwn }) => {
   const renderMessageContent = () => {
     if (message.isDeleted) {
       return (
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          fontStyle="italic"
-        >
+        <Typography variant="body2" color="text.secondary" fontStyle="italic">
           This message was deleted
         </Typography>
       );
     }
 
     switch (message.type) {
-      case 'image':
+      case "image":
         return (
           <Box>
             {message.image && (
-              <img
-                src={message.image.url}
-                alt="Shared image"
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: 300,
-                  borderRadius: 8,
-                  marginBottom: message.content ? 8 : 0,
+              <Box
+                onClick={() => setImageDialogOpen(true)}
+                sx={{
+                  cursor: "pointer",
+                  position: "relative",
+                  "&:hover": {
+                    opacity: 0.9,
+                  },
                 }}
-              />
+              >
+                <img
+                  src={
+                    message.image.url.startsWith("http")
+                      ? message.image.url
+                      : `http://localhost:5000${message.image.url}`
+                  }
+                  alt="Shared image"
+                  style={{
+                    maxWidth: "100%",
+                    maxHeight: 300,
+                    borderRadius: 8,
+                    marginBottom: message.content ? 8 : 0,
+                    display: "block",
+                  }}
+                />
+              </Box>
             )}
             {message.content && (
               <Typography variant="body1">{message.content}</Typography>
             )}
           </Box>
         );
-      
-      case 'file':
+
+      case "file":
         return (
           <Box>
             {message.file && (
               <Paper
                 variant="outlined"
-                sx={{ p: 1, mb: message.content ? 1 : 0, display: 'inline-block' }}
+                sx={{
+                  p: 1.5,
+                  mb: message.content ? 1 : 0,
+                  display: "inline-block",
+                  cursor: "pointer",
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                  },
+                }}
+                onClick={() => {
+                  // Download the file
+                  const fileUrl = message.file.url.startsWith("http")
+                    ? message.file.url
+                    : `http://localhost:5000${message.file.url}`;
+                  window.open(fileUrl, "_blank");
+                }}
               >
-                <Typography variant="body2">
+                <Typography
+                  variant="body2"
+                  sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                >
                   📎 {message.file.filename}
+                  <Typography variant="caption" color="text.secondary">
+                    ({(message.file.size / 1024).toFixed(2)} KB)
+                  </Typography>
                 </Typography>
               </Paper>
             )}
@@ -165,10 +223,10 @@ const Message = ({ message, showAvatar, isOwn }) => {
             )}
           </Box>
         );
-      
+
       default:
         return (
-          <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>
+          <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
             {message.content}
           </Typography>
         );
@@ -178,12 +236,12 @@ const Message = ({ message, showAvatar, isOwn }) => {
   return (
     <Box
       sx={{
-        display: 'flex',
-        flexDirection: isOwn ? 'row-reverse' : 'row',
-        alignItems: 'flex-start',
+        display: "flex",
+        flexDirection: isOwn ? "row-reverse" : "row",
+        alignItems: "flex-start",
         px: 2,
         py: showAvatar ? 1 : 0.25,
-        '&:hover .message-actions': {
+        "&:hover .message-actions": {
           opacity: 1,
         },
       }}
@@ -193,7 +251,25 @@ const Message = ({ message, showAvatar, isOwn }) => {
         {showAvatar && !isOwn && (
           <Avatar
             src={message.sender.profilePicture}
-            sx={{ width: 32, height: 32 }}
+            sx={{
+              width: 32,
+              height: 32,
+              cursor:
+                chatType === "group" && onUserClick ? "pointer" : "default",
+              "&:hover":
+                chatType === "group" && onUserClick
+                  ? {
+                      opacity: 0.8,
+                      transform: "scale(1.05)",
+                      transition: "all 0.2s",
+                    }
+                  : {},
+            }}
+            onClick={() => {
+              if (chatType === "group" && onUserClick && message.sender?._id) {
+                onUserClick(message.sender._id);
+              }
+            }}
           >
             {message.sender.username[0]?.toUpperCase()}
           </Avatar>
@@ -203,25 +279,51 @@ const Message = ({ message, showAvatar, isOwn }) => {
       {/* Message Content */}
       <Box
         sx={{
-          maxWidth: '70%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: isOwn ? 'flex-end' : 'flex-start',
+          maxWidth: "70%",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: isOwn ? "flex-end" : "flex-start",
         }}
       >
         {/* Sender Name and Time (for group chats or when showing avatar) */}
         {showAvatar && (
           <Box
             sx={{
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               gap: 1,
               mb: 0.5,
-              flexDirection: isOwn ? 'row-reverse' : 'row',
+              flexDirection: isOwn ? "row-reverse" : "row",
             }}
           >
-            <Typography variant="caption" fontWeight="bold" color="text.secondary">
-              {isOwn ? 'You' : message.sender.username}
+            <Typography
+              variant="caption"
+              fontWeight="bold"
+              color="text.secondary"
+              sx={{
+                cursor:
+                  !isOwn && chatType === "group" && onUserClick
+                    ? "pointer"
+                    : "default",
+                "&:hover":
+                  !isOwn && chatType === "group" && onUserClick
+                    ? {
+                        textDecoration: "underline",
+                      }
+                    : {},
+              }}
+              onClick={() => {
+                if (
+                  !isOwn &&
+                  chatType === "group" &&
+                  onUserClick &&
+                  message.sender?._id
+                ) {
+                  onUserClick(message.sender._id);
+                }
+              }}
+            >
+              {isOwn ? "You" : message.sender.username}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               {formatMessageTime(message.createdAt)}
@@ -234,13 +336,13 @@ const Message = ({ message, showAvatar, isOwn }) => {
           elevation={1}
           sx={{
             p: 1.5,
-            bgcolor: isOwn ? 'primary.main' : 'background.paper',
-            color: isOwn ? 'primary.contrastText' : 'text.primary',
+            bgcolor: isOwn ? "primary.main" : "background.paper",
+            color: isOwn ? "primary.contrastText" : "text.primary",
             borderRadius: 2,
             borderTopLeftRadius: isOwn || !showAvatar ? 2 : 0.5,
             borderTopRightRadius: !isOwn || !showAvatar ? 2 : 0.5,
-            position: 'relative',
-            wordBreak: 'break-word',
+            position: "relative",
+            wordBreak: "break-word",
           }}
         >
           {/* Reply Preview */}
@@ -248,14 +350,14 @@ const Message = ({ message, showAvatar, isOwn }) => {
             <Box
               sx={{
                 borderLeft: 3,
-                borderColor: isOwn ? 'primary.light' : 'primary.main',
+                borderColor: isOwn ? "primary.light" : "primary.main",
                 pl: 1,
                 mb: 1,
                 opacity: 0.7,
               }}
             >
               <Typography variant="caption" display="block">
-                Replying to {message.replyTo.sender?.username || 'Unknown'}
+                Replying to {message.replyTo.sender?.username || "Unknown"}
               </Typography>
               <Typography variant="body2" noWrap>
                 {message.replyTo.content}
@@ -270,8 +372,8 @@ const Message = ({ message, showAvatar, isOwn }) => {
           {message.edited?.isEdited && (
             <Typography
               variant="caption"
-              color={isOwn ? 'primary.light' : 'text.secondary'}
-              sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}
+              color={isOwn ? "primary.light" : "text.secondary"}
+              sx={{ display: "block", mt: 0.5, fontStyle: "italic" }}
             >
               (edited)
             </Typography>
@@ -283,16 +385,16 @@ const Message = ({ message, showAvatar, isOwn }) => {
             size="small"
             onClick={handleMenuOpen}
             sx={{
-              position: 'absolute',
+              position: "absolute",
               top: -8,
-              right: isOwn ? 'auto' : -8,
-              left: isOwn ? -8 : 'auto',
+              right: isOwn ? "auto" : -8,
+              left: isOwn ? -8 : "auto",
               opacity: 0,
-              transition: 'opacity 0.2s',
-              bgcolor: 'background.paper',
+              transition: "opacity 0.2s",
+              bgcolor: "background.paper",
               boxShadow: 1,
-              '&:hover': {
-                bgcolor: 'action.hover',
+              "&:hover": {
+                bgcolor: "action.hover",
               },
             }}
           >
@@ -313,15 +415,15 @@ const Message = ({ message, showAvatar, isOwn }) => {
           sx: { minWidth: 120 },
         }}
       >
-        <MenuItem onClick={() => handleReaction('👍')}>
+        <MenuItem onClick={() => handleReaction("👍")}>
           <EmojiEmotions sx={{ mr: 1 }} />
           👍
         </MenuItem>
-        <MenuItem onClick={() => handleReaction('❤️')}>
+        <MenuItem onClick={() => handleReaction("❤️")}>
           <EmojiEmotions sx={{ mr: 1 }} />
           ❤️
         </MenuItem>
-        <MenuItem onClick={() => handleReaction('😊')}>
+        <MenuItem onClick={() => handleReaction("😊")}>
           <EmojiEmotions sx={{ mr: 1 }} />
           😊
         </MenuItem>
@@ -342,6 +444,66 @@ const Message = ({ message, showAvatar, isOwn }) => {
           </>
         )}
       </Menu>
+
+      {/* Image Lightbox Dialog */}
+      <Dialog
+        open={imageDialogOpen}
+        onClose={() => setImageDialogOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogContent sx={{ p: 0, bgcolor: "black" }}>
+          {message.image && (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                minHeight: 400,
+              }}
+            >
+              <img
+                src={
+                  message.image.url.startsWith("http")
+                    ? message.image.url
+                    : `http://localhost:5000${message.image.url}`
+                }
+                alt="Full size"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "80vh",
+                  objectFit: "contain",
+                }}
+              />
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setImageDialogOpen(false)} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+      >
+        <DialogTitle>Delete Message?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this message? This action cannot be
+            undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
+          <Button onClick={confirmDelete} color="error" variant="contained">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
