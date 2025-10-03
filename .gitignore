@@ -22,6 +22,12 @@ backend/.env
 frontend/.env
 frontend-vite/.env
 
+# User uploads - NEVER track user files!
+backend/uploads/
+!backend/uploads/.gitkeep
+*/uploads/
+!*/uploads/.gitkeep
+
 # Firebase sensitive files
 serviceAccountKey.json
 **/serviceAccountKey.json
