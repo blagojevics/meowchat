@@ -28,20 +28,25 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: false, // Disable sourcemaps for production
-    minify: 'terser', // Use terser for better minification
+    minify: "terser", // Use terser for better minification
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ["react", "react-dom"],
           mui: ["@mui/material", "@mui/icons-material"],
-          firebase: ["firebase/app", "firebase/auth", "firebase/firestore", "firebase/storage"],
+          firebase: [
+            "firebase/app",
+            "firebase/auth",
+            "firebase/firestore",
+            "firebase/storage",
+          ],
         },
       },
     },
   },
   define: {
     // Explicitly set NODE_ENV for production builds
-    'process.env.NODE_ENV': JSON.stringify('production'),
+    "process.env.NODE_ENV": JSON.stringify("production"),
   },
   preview: {
     port: 4173,
