@@ -4,57 +4,55 @@ const firebaseService = require("../config/firebase");
 const encryptionService = require("./encryptionService");
 
 class HybridAuthService {
-  // Login with local credentials OR Firebase token
+  // Login with Firebase token only (MeowGram users + Google Auth)
   async login(loginData) {
-    const { email, password, firebaseToken } = loginData;
+    const { firebaseToken } = loginData;
 
-    // Option 1: Firebase token login (from Meowgram)
+    // Only Firebase token login allowed (from MeowGram or Google)
     if (firebaseToken) {
       return await this.loginWithFirebase(firebaseToken);
     }
 
-    // Option 2: Local email/password login
-    if (email && password) {
-      return await this.loginLocal(email, password);
-    }
-
-    throw new Error("Invalid login credentials");
+    throw new Error(
+      "Only MeowGram users can access this chat. Please use Google authentication."
+    );
   }
 
-  // Local MongoDB authentication
-  async loginLocal(email, password) {
-    // Find user in local MongoDB
-    const user = await User.findOne({ email });
-    if (!user) {
-      throw new Error("Invalid credentials");
+  // Login with MeowGram email/password (authenticates through Firebase)
+  async loginMeowgramUser(loginData) {
+    const { email, password } = loginData;
+
+    try {
+      // Authenticate with Firebase using email/password
+      const firebaseAuth = require("firebase-admin").auth();
+
+      // First, try to get the user by email from Firebase
+      let firebaseUser;
+      try {
+        firebaseUser = await firebaseAuth.getUserByEmail(email);
+      } catch (error) {
+        throw new Error(
+          "MeowGram user not found. Please ensure you have a MeowGram account."
+        );
+      }
+
+      // For Firebase email/password users, we need to sign them in through the client SDK
+      // Since we're on the server, we'll need to create a custom token
+      const customToken = await firebaseAuth.createCustomToken(
+        firebaseUser.uid
+      );
+
+      // Return the custom token so the frontend can authenticate
+      return {
+        success: true,
+        needsClientAuth: true,
+        customToken,
+        message: "Please complete authentication on the client",
+      };
+    } catch (error) {
+      console.error("MeowGram login error:", error);
+      throw new Error("Invalid MeowGram credentials or user not found");
     }
-
-    // Check password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      throw new Error("Invalid credentials");
-    }
-
-    // Update online status
-    user.isOnline = true;
-    user.lastSeen = new Date();
-    await user.save();
-
-    // Generate JWT token
-    const token = generateToken({ id: user._id, type: "local" });
-
-    return {
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        profilePicture: user.profilePicture,
-        bio: user.bio,
-        isOnline: user.isOnline,
-        type: "local",
-      },
-    };
   }
 
   // Firebase authentication (sync from Meowgram)
@@ -193,64 +191,6 @@ class HybridAuthService {
     // Add random suffix to ensure uniqueness
     const suffix = Math.floor(Math.random() * 1000);
     return `${baseUsername}${suffix}`;
-  }
-
-  // Register new local user
-  async registerLocal(userData) {
-    const { username, email, password, profilePicture, bio } = userData;
-
-    // Check if user already exists (local or Firebase)
-    const existingUser = await User.findOne({
-      $or: [{ email }, { username }],
-    });
-
-    if (existingUser) {
-      throw new Error(
-        existingUser.email === email
-          ? "Email already registered"
-          : "Username already taken"
-      );
-    }
-
-    // Generate RSA key pair for end-to-end encryption
-    const { publicKey, privateKey } = encryptionService.generateUserKeyPair();
-
-    // Encrypt private key with user's password
-    const encryptedPrivateKey = encryptionService.encryptPrivateKey(
-      privateKey,
-      password
-    );
-
-    // Create new local user
-    const user = new User({
-      username,
-      email,
-      password,
-      profilePicture: profilePicture || "",
-      bio: bio || "",
-      isFromMeowgram: false,
-      publicKey,
-      encryptedPrivateKey,
-    });
-
-    await user.save();
-
-    console.log(`🔐 Generated encryption keys for user: ${username}`);
-
-    // Generate JWT token
-    const token = generateToken({ id: user._id, type: "local" });
-
-    return {
-      token,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        profilePicture: user.profilePicture,
-        bio: user.bio,
-        type: "local",
-      },
-    };
   }
 
   // Get user by ID (works for both local and Firebase users)

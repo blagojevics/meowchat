@@ -40,7 +40,8 @@ api.interceptors.response.use(
 // Auth API methods
 export const authAPI = {
   login: (email, password) => api.post("/auth/login", { email, password }),
-  register: (userData) => api.post("/auth/register", userData),
+  meowgramLogin: (email, password) =>
+    api.post("/auth/meowgram-login", { email, password }),
   logout: () => api.post("/auth/logout"),
   getMe: () => api.get("/auth/me"),
   firebaseLogin: (firebaseToken) =>

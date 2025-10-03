@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from "react";
+﻿import React, { createContext, useContext, useReducer, useEffect } from "react";
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -85,21 +85,21 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = async () => {
     try {
-      console.log("🔄 Starting Google login...");
+      console.log(" Starting Google login...");
       dispatch({ type: "AUTH_START" });
 
       // Sign in with Google popup
       const result = await signInWithPopup(auth, googleProvider);
-      console.log("✅ Google sign-in successful:", result.user.email);
+      console.log(" Google sign-in successful:", result.user.email);
 
       const firebaseToken = await result.user.getIdToken();
-      console.log("🔑 Firebase token obtained, sending to backend...");
+      console.log(" Firebase token obtained, sending to backend...");
 
       // Send Firebase token to backend
       const response = await api.post("/auth/firebase-login", {
         firebaseToken,
       });
-      console.log("✅ Backend login successful:", response.data);
+      console.log(" Backend login successful:", response.data);
 
       const { token, user } = response.data;
 
@@ -113,7 +113,7 @@ export const AuthProvider = ({ children }) => {
 
       return { success: true };
     } catch (error) {
-      console.error("❌ Google login error:", error);
+      console.error(" Google login error:", error);
       let message = "Google login failed";
 
       if (error.code === "auth/popup-closed-by-user") {
@@ -165,51 +165,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password, useFirebase = false) => {
-    if (useFirebase) {
-      return await loginWithFirebase(email, password);
-    }
-
+  const loginMeowgram = async (email, password) => {
     try {
       dispatch({ type: "AUTH_START" });
 
-      const response = await api.post("/auth/login", { email, password });
-      const { token, user } = response.data;
-
-      localStorage.setItem("token", token);
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-      dispatch({
-        type: "AUTH_SUCCESS",
-        payload: { user, token },
-      });
-
-      return { success: true };
+      // Try Firebase email/password authentication first
+      try {
+        return await loginWithFirebase(email, password);
+      } catch (firebaseError) {
+        // If Firebase auth fails, it means user doesn't exist in MeowGram
+        console.log(
+          "Firebase auth failed, user not in MeowGram:",
+          firebaseError.message
+        );
+        throw new Error(
+          "Invalid MeowGram credentials. Please check your email and password."
+        );
+      }
     } catch (error) {
-      const message = error.response?.data?.message || "Login failed";
-      dispatch({ type: "AUTH_ERROR", payload: message });
-      return { success: false, error: message };
-    }
-  };
-
-  const register = async (userData) => {
-    try {
-      dispatch({ type: "AUTH_START" });
-
-      const response = await api.post("/auth/register", userData);
-      const { token, user } = response.data;
-
-      localStorage.setItem("token", token);
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-      dispatch({
-        type: "AUTH_SUCCESS",
-        payload: { user, token },
-      });
-
-      return { success: true };
-    } catch (error) {
-      const message = error.response?.data?.message || "Registration failed";
+      const message = error.message || "MeowGram login failed";
       dispatch({ type: "AUTH_ERROR", payload: message });
       return { success: false, error: message };
     }
@@ -245,10 +219,9 @@ export const AuthProvider = ({ children }) => {
     token: state.token,
     loading: state.loading,
     error: state.error,
-    login,
     loginWithFirebase,
+    loginMeowgram,
     loginWithGoogle,
-    register,
     logout,
     updateUser,
   };

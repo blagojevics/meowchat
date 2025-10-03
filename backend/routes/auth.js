@@ -1,7 +1,7 @@
 const express = require("express");
+const User = require("../models/User");
 const hybridAuthService = require("../services/hybridAuth");
 const {
-  registerValidation,
   loginValidation,
   handleValidationErrors,
 } = require("../middleware/validation");
@@ -47,32 +47,8 @@ router.get("/test", async (req, res) => {
   }
 });
 
-// @route   POST /api/auth/register
-// @desc    Register a new local user
-// @access  Public
-router.post(
-  "/register",
-  registerValidation,
-  handleValidationErrors,
-  async (req, res) => {
-    try {
-      const result = await hybridAuthService.registerLocal(req.body);
-
-      res.status(201).json({
-        message: "User registered successfully",
-        ...result,
-      });
-    } catch (error) {
-      console.error("Registration error:", error);
-      res.status(400).json({
-        message: error.message || "Registration failed",
-      });
-    }
-  }
-);
-
 // @route   POST /api/auth/login
-// @desc    Login user (local or Firebase)
+// @desc    Login user (Firebase only - MeowGram users + Google Auth)
 // @access  Public
 router.post("/login", async (req, res) => {
   try {
@@ -147,6 +123,41 @@ router.post("/firebase-login", async (req, res) => {
     });
   }
 });
+
+// @route   POST /api/auth/meowgram-login
+// @desc    Login with MeowGram email/password (for users without Google)
+// @access  Public
+router.post(
+  "/meowgram-login",
+  loginValidation,
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      console.log("🔄 Processing MeowGram email/password login for:", email);
+
+      const result = await hybridAuthService.loginMeowgramUser({
+        email,
+        password,
+      });
+
+      console.log("✅ MeowGram login successful for user:", result.user.email);
+
+      res.json({
+        message: "MeowGram login successful",
+        ...result,
+      });
+    } catch (error) {
+      console.error("❌ MeowGram login error:", error.message);
+
+      res.status(401).json({
+        message: "Invalid MeowGram credentials or user not found in MeowGram",
+        error: "INVALID_CREDENTIALS",
+      });
+    }
+  }
+);
 
 // @route   POST /api/auth/logout
 // @desc    Logout user
