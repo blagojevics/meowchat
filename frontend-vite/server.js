@@ -22,9 +22,9 @@ console.log("   - PWD:", process.env.PWD);
 console.log("📂 Files in current directory:");
 try {
   const files = fs.readdirSync(__dirname);
-  files.forEach(file => {
+  files.forEach((file) => {
     const stats = fs.statSync(path.join(__dirname, file));
-    console.log(`   ${stats.isDirectory() ? '📁' : '📄'} ${file}`);
+    console.log(`   ${stats.isDirectory() ? "📁" : "📄"} ${file}`);
   });
 } catch (err) {
   console.error("❌ Error reading directory:", err);
@@ -47,9 +47,9 @@ console.log("✅ Dist folder found");
 console.log("📂 Dist folder contents:");
 try {
   const distFiles = fs.readdirSync(distPath);
-  distFiles.forEach(file => {
+  distFiles.forEach((file) => {
     const stats = fs.statSync(path.join(distPath, file));
-    console.log(`   ${stats.isDirectory() ? '📁' : '📄'} ${file}`);
+    console.log(`   ${stats.isDirectory() ? "📁" : "📄"} ${file}`);
   });
 } catch (err) {
   console.error("❌ Error reading dist directory:", err);
@@ -66,7 +66,7 @@ console.log("📄 Index.html size:", fs.statSync(indexPath).size, "bytes");
 
 // Read and log first 200 chars of index.html
 try {
-  const indexContent = fs.readFileSync(indexPath, 'utf8');
+  const indexContent = fs.readFileSync(indexPath, "utf8");
   console.log("📄 Index.html preview:", indexContent.substring(0, 200));
 } catch (err) {
   console.error("❌ Error reading index.html:", err);
