@@ -12,18 +12,24 @@ const chatRoutes = require("./routes/chats");
 const messageRoutes = require("./routes/messages");
 const socketHandlers = require("./socket/socketHandlers");
 
+// Security middleware imports
+const { generalLimiter, authLimiter, messageLimiter, uploadLimiter, chatCreationLimiter } = require("./middleware/rateLimiter");
+const { sanitizeInput } = require("./middleware/security");
+
 const app = express();
 const server = http.createServer(app);
 
-// CORS origins for development
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost:3002",
-  "http://localhost:5173",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:5173",
-];
+// CORS origins - restrict to specific domains
+const allowedOrigins = process.env.NODE_ENV === 'production' 
+  ? [process.env.CORS_ORIGIN] 
+  : [
+      "http://localhost:3000",
+      "http://localhost:3001", 
+      "http://localhost:3002",
+      "http://localhost:5173",
+      "http://127.0.0.1:3000",
+      "http://127.0.0.1:5173",
+    ];
 
 const io = socketIo(server, {
   cors: {
@@ -36,12 +42,25 @@ const io = socketIo(server, {
 // Connect to MongoDB
 connectDB();
 
-// Middleware
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-  })
-);
+// Security Middleware (Applied BEFORE other middleware)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'", "ws:", "wss:"],
+    },
+  },
+}));
+
+// Apply general rate limiting to all requests
+app.use(generalLimiter);
+
+// Input sanitization for all requests
+app.use(sanitizeInput);
 
 app.use(
   cors({
@@ -59,11 +78,21 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Body parsing middleware with size limits
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Serve uploaded files with security headers
+app.use("/uploads", express.static(path.join(__dirname, "uploads"), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.exe') || path.endsWith('.bat') || path.endsWith('.cmd')) {
+      res.status(403).end();
+      return;
+    }
+    res.set('X-Content-Type-Options', 'nosniff');
+  }
+}));
 
 // Make io available to routes
 app.use((req, res, next) => {
@@ -71,14 +100,36 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/chats", chatRoutes);
-app.use("/api/messages", messageRoutes);
+// Routes with specific rate limiting
+app.use("/api/auth", authLimiter, authRoutes);
+app.use("/api/chats", chatCreationLimiter, chatRoutes);
+app.use("/api/messages", messageLimiter, messageRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
-  res.json({ status: "OK", message: "MeowChat Backend is running!" });
+  res.json({ 
+    status: "OK", 
+    message: "MeowChat Backend is running!",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV
+  });
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error occurred:', err.message);
+  
+  // Don't leak error details in production
+  if (process.env.NODE_ENV === 'production') {
+    res.status(500).json({ error: 'Internal server error' });
+  } else {
+    res.status(500).json({ error: err.message, stack: err.stack });
+  }
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route not found' });
 });
 
 // Socket.io connection handling

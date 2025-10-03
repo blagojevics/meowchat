@@ -22,6 +22,8 @@ import {
   Delete,
   Reply,
   EmojiEmotions,
+  ContentCopy,
+  Forward,
 } from "@mui/icons-material";
 import { format, isToday, isYesterday } from "date-fns";
 import { useAuth } from "../contexts/AuthContext";
@@ -93,6 +95,22 @@ const Message = ({
     handleMenuClose();
     if (onReply) {
       onReply(message);
+    }
+  };
+
+  const handleCopy = () => {
+    handleMenuClose();
+    if (message.content) {
+      navigator.clipboard.writeText(message.content);
+      // TODO: Show snackbar confirmation
+    }
+  };
+
+  const handleForward = () => {
+    handleMenuClose();
+    // TODO: Implement forward functionality
+    if (onForward) {
+      onForward(message);
     }
   };
 
@@ -430,6 +448,14 @@ const Message = ({
         <MenuItem onClick={handleReply}>
           <Reply sx={{ mr: 1 }} />
           Reply
+        </MenuItem>
+        <MenuItem onClick={handleCopy}>
+          <ContentCopy sx={{ mr: 1 }} />
+          Copy
+        </MenuItem>
+        <MenuItem onClick={handleForward}>
+          <Forward sx={{ mr: 1 }} />
+          Forward
         </MenuItem>
         {isOwn && (
           <>

@@ -38,6 +38,12 @@ const ChatWindow = ({
   showUserInfo,
   onUserClick,
 }) => {
+  console.log(
+    "🐱 ChatWindow rendered with onUserClick:",
+    !!onUserClick,
+    "chatId:",
+    chatId
+  );
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const [menuAnchor, setMenuAnchor] = useState(null);
@@ -101,7 +107,6 @@ const ChatWindow = ({
       );
 
       if (response.ok) {
-        console.log("Chat cleared:", chatId);
         setClearChatDialog(false);
         // Reload the page to refresh messages
         window.location.reload();
@@ -123,7 +128,6 @@ const ChatWindow = ({
       if (deleteChat) {
         await deleteChat();
         setDeleteChatDialog(false);
-        console.log("Chat deleted:", chatId);
       }
     } catch (error) {
       console.error("Error deleting chat:", error);
@@ -133,13 +137,11 @@ const ChatWindow = ({
   const handleBlockUser = () => {
     handleMenuClose();
     // TODO: Implement block user
-    console.log("Block user");
   };
 
   const handleReportUser = () => {
     handleMenuClose();
     // TODO: Implement report user
-    console.log("Block user");
   };
 
   const handleEditMessage = (message) => {
@@ -151,7 +153,6 @@ const ChatWindow = ({
     try {
       if (deleteMessage) {
         await deleteMessage(messageId);
-        console.log("Message deleted:", messageId);
       }
     } catch (error) {
       console.error("Error deleting message:", error);
@@ -257,13 +258,40 @@ const ChatWindow = ({
 
     const text =
       typingNames.length === 1
-        ? `${typingNames[0]} is typing...`
-        : `${typingNames.join(", ")} are typing...`;
+        ? `${typingNames[0]} is typing`
+        : typingNames.length === 2
+        ? `${typingNames.join(" and ")} are typing`
+        : `${typingNames.slice(0, 2).join(", ")} and ${
+            typingNames.length - 2
+          } ${typingNames.length === 3 ? "other" : "others"} are typing`;
 
     return (
-      <Box sx={{ px: 2, py: 1 }}>
+      <Box sx={{ px: 2, py: 1, display: "flex", alignItems: "center", gap: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 0.3,
+            "& > div": {
+              width: 4,
+              height: 4,
+              borderRadius: "50%",
+              bgcolor: "primary.main",
+              animation: "typing 1.4s infinite ease-in-out",
+            },
+            "& > div:nth-of-type(1)": { animationDelay: "-0.32s" },
+            "& > div:nth-of-type(2)": { animationDelay: "-0.16s" },
+            "@keyframes typing": {
+              "0%, 80%, 100%": { transform: "scale(0)" },
+              "40%": { transform: "scale(1)" },
+            },
+          }}
+        >
+          <div />
+          <div />
+          <div />
+        </Box>
         <Typography variant="caption" color="text.secondary" fontStyle="italic">
-          {text}
+          {text}...
         </Typography>
       </Box>
     );
@@ -335,7 +363,11 @@ const ChatWindow = ({
             <Typography variant="h6" fontWeight="bold">
               {getChatDisplayName()}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ fontSize: "0.75rem" }}
+            >
               {getChatStatus()}
             </Typography>
           </Box>
@@ -373,25 +405,61 @@ const ChatWindow = ({
           </ListItemIcon>
           <ListItemText>Clear chat</ListItemText>
         </MenuItem>
+
+        {/* Group-specific options */}
+        {chat?.type === "group" && (
+          <>
+            <MenuItem
+              onClick={() => {
+                handleMenuClose();
+                // TODO: Implement add participants
+              }}
+            >
+              <ListItemIcon>
+                <Group fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Add participants</ListItemText>
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                handleMenuClose();
+                // TODO: Implement leave group
+              }}
+            >
+              <ListItemIcon>
+                <Delete fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Leave group</ListItemText>
+            </MenuItem>
+            <Divider />
+          </>
+        )}
+
         <MenuItem onClick={handleDeleteConversation}>
           <ListItemIcon>
             <Delete fontSize="small" />
           </ListItemIcon>
           <ListItemText>Delete conversation</ListItemText>
         </MenuItem>
-        <Divider />
-        <MenuItem onClick={handleBlockUser}>
-          <ListItemIcon>
-            <Block fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Block</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleReportUser}>
-          <ListItemIcon>
-            <Report fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Report</ListItemText>
-        </MenuItem>
+
+        {/* Private chat options */}
+        {chat?.type === "private" && (
+          <>
+            <Divider />
+            <MenuItem onClick={handleBlockUser}>
+              <ListItemIcon>
+                <Block fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Block</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={handleReportUser}>
+              <ListItemIcon>
+                <Report fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Report</ListItemText>
+            </MenuItem>
+          </>
+        )}
       </Menu>
 
       {/* Messages Container - Simplified */}
@@ -435,6 +503,8 @@ const ChatWindow = ({
                 onEdit={handleEditMessage}
                 onDelete={handleDeleteMessage}
                 onReply={handleReplyToMessage}
+                onUserClick={onUserClick}
+                chatType={chat?.type}
               />
             );
           })

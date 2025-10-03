@@ -66,7 +66,6 @@ const UserList = ({ chatId, selectedUserId, onClose }) => {
       });
 
       // Chat created successfully - could emit an event or callback here
-      console.log("Chat created:", response.data.chat);
     } catch (error) {
       console.error("Error creating chat:", error);
     }
@@ -145,8 +144,38 @@ const UserList = ({ chatId, selectedUserId, onClose }) => {
                     primary={chatUser.username}
                     secondary={
                       <Box>
-                        <Typography variant="caption" color="text.secondary">
-                          {isOnline ? "Online" : "Offline"}
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ fontSize: "0.75rem" }}
+                        >
+                          {(() => {
+                            if (isOnline) return "Online";
+
+                            if (chatUser.lastSeen) {
+                              const lastSeen = new Date(chatUser.lastSeen);
+                              const now = new Date();
+                              const diffInMinutes = Math.floor(
+                                (now - lastSeen) / (1000 * 60)
+                              );
+
+                              if (diffInMinutes < 1)
+                                return "Last seen just now";
+                              if (diffInMinutes < 60)
+                                return `Last seen ${diffInMinutes}m ago`;
+                              if (diffInMinutes < 1440)
+                                return `Last seen ${Math.floor(
+                                  diffInMinutes / 60
+                                )}h ago`;
+                              if (diffInMinutes < 10080)
+                                return `Last seen ${Math.floor(
+                                  diffInMinutes / 1440
+                                )}d ago`;
+                              return "Last seen long ago";
+                            }
+
+                            return "Offline";
+                          })()}
                         </Typography>
                         {chatUser.bio && (
                           <Typography
@@ -203,9 +232,27 @@ const UserList = ({ chatId, selectedUserId, onClose }) => {
 
         const isOnline = userObj ? onlineUsers.has(userObj._id) : false;
 
+        let subtitle = "Offline";
+        if (isOnline) {
+          subtitle = "Online";
+        } else if (userObj?.lastSeen) {
+          const lastSeen = new Date(userObj.lastSeen);
+          const now = new Date();
+          const diffInMinutes = Math.floor((now - lastSeen) / (1000 * 60));
+
+          if (diffInMinutes < 1) subtitle = "Last seen just now";
+          else if (diffInMinutes < 60)
+            subtitle = `Last seen ${diffInMinutes}m ago`;
+          else if (diffInMinutes < 1440)
+            subtitle = `Last seen ${Math.floor(diffInMinutes / 60)}h ago`;
+          else if (diffInMinutes < 10080)
+            subtitle = `Last seen ${Math.floor(diffInMinutes / 1440)}d ago`;
+          else subtitle = "Last seen long ago";
+        }
+
         return {
           title: userObj?.username || "User",
-          subtitle: isOnline ? "Online" : "Offline",
+          subtitle,
           avatar: userObj?.profilePicture,
           icon: <Person />,
           isGroupMember: true,
@@ -242,9 +289,26 @@ const UserList = ({ chatId, selectedUserId, onClose }) => {
 
     const isOnline = userObj ? onlineUsers.has(userObj._id) : false;
 
+    let subtitle = "Offline";
+    if (isOnline) {
+      subtitle = "Online";
+    } else if (userObj?.lastSeen) {
+      const lastSeen = new Date(userObj.lastSeen);
+      const now = new Date();
+      const diffInMinutes = Math.floor((now - lastSeen) / (1000 * 60));
+
+      if (diffInMinutes < 1) subtitle = "Last seen just now";
+      else if (diffInMinutes < 60) subtitle = `Last seen ${diffInMinutes}m ago`;
+      else if (diffInMinutes < 1440)
+        subtitle = `Last seen ${Math.floor(diffInMinutes / 60)}h ago`;
+      else if (diffInMinutes < 10080)
+        subtitle = `Last seen ${Math.floor(diffInMinutes / 1440)}d ago`;
+      else subtitle = "Last seen long ago";
+    }
+
     return {
       title: userObj?.username || "User",
-      subtitle: isOnline ? "Online" : "Offline",
+      subtitle,
       avatar: userObj?.profilePicture,
       icon: <Person />,
     };
@@ -298,7 +362,11 @@ const UserList = ({ chatId, selectedUserId, onClose }) => {
           <Typography variant="h6" fontWeight="bold">
             {chatInfo.title}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ fontSize: "0.8rem" }}
+          >
             {chatInfo.subtitle}
           </Typography>
         </Box>

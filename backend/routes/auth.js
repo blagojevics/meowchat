@@ -5,6 +5,10 @@ const {
   loginValidation,
   handleValidationErrors,
 } = require("../middleware/validation");
+const { 
+  validateRegistration, 
+  validateLogin 
+} = require("../middleware/security");
 
 const router = express.Router();
 
@@ -52,6 +56,7 @@ router.get("/test", async (req, res) => {
 // @access  Public
 router.post(
   "/register",
+  validateRegistration,
   registerValidation,
   handleValidationErrors,
   async (req, res) => {
@@ -74,7 +79,7 @@ router.post(
 // @route   POST /api/auth/login
 // @desc    Login user (local or Firebase)
 // @access  Public
-router.post("/login", async (req, res) => {
+router.post("/login", validateLogin, async (req, res) => {
   try {
     const result = await hybridAuthService.login(req.body);
 
