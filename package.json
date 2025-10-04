@@ -17,5 +17,8 @@
     "workspace"
   ],
   "author": "Your Name",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5"
+  }
 }
