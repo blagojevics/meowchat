@@ -78,26 +78,28 @@ const app = express();
 const server = http.createServer(app);
 
 // CORS origins for MeowGram integration
-const allowedOrigins = [
-  // Development origins
-  "http://localhost:3000",
-  "http://localhost:3001",
-  "http://localhost:3002",
-  "http://localhost:5173", // MeowGram frontend (CRITICAL)
-  "http://localhost:5174", // Alternative port
-  "http://localhost:5175",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:5174",
-  // Production origins
-  "https://meowchat-backend-production-0763.up.railway.app",
-  "https://meowchat-frontend-vite-production.up.railway.app", // ✅ Your actual frontend domain
-  // Environment-based origins
-  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []),
-  ...(process.env.ADDITIONAL_ORIGINS
-    ? process.env.ADDITIONAL_ORIGINS.split(",")
-    : []),
-];
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Get allowed origins from environment variable
+    const allowedOrigins = process.env.CORS_ORIGIN ? 
+      process.env.CORS_ORIGIN.split(',').map(url => url.trim()) : 
+      ['http://localhost:3000', 'http://localhost:5173'];
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log(`CORS blocked origin: ${origin}`);
+      console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
 
 const io = socketIo(server, {
   cors: {
@@ -178,15 +180,11 @@ app.use(
   })
 );
 
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-requested-with"],
-    optionsSuccessStatus: 200, // For legacy browser support
-  })
-);
+// Apply CORS middleware
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
