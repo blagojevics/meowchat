@@ -72,11 +72,10 @@ try {
   console.error("❌ Error reading index.html:", err);
 }
 
-// Security headers - ALLOWED for iframe embedding
+// Security headers
 app.use((req, res, next) => {
   res.header("X-Content-Type-Options", "nosniff");
-  // REMOVE X-Frame-Options: DENY to allow iframe embedding
-  // res.header("X-Frame-Options", "DENY");
+  res.header("X-Frame-Options", "DENY");
   res.header("X-XSS-Protection", "1; mode=block");
   next();
 });
@@ -88,10 +87,6 @@ app.use((req, res, next) => {
   } else if (req.path.endsWith(".css")) {
     res.type("text/css");
   } else if (req.path.endsWith(".json")) {
-    res.type("application/json");
-  } else if (req.path.endsWith(".mjs")) {
-    res.type("application/javascript");
-  } else if (req.path.endsWith(".map")) {
     res.type("application/json");
   }
   next();
@@ -110,19 +105,6 @@ app.use(
   express.static(distPath, {
     maxAge: "1d",
     etag: false,
-    setHeaders: (res, path) => {
-      if (path.endsWith(".js")) {
-        res.setHeader("Content-Type", "application/javascript");
-      } else if (path.endsWith(".css")) {
-        res.setHeader("Content-Type", "text/css");
-      } else if (path.endsWith(".json")) {
-        res.setHeader("Content-Type", "application/json");
-      } else if (path.endsWith(".mjs")) {
-        res.setHeader("Content-Type", "application/javascript");
-      } else if (path.endsWith(".map")) {
-        res.setHeader("Content-Type", "application/json");
-      }
-    },
   })
 );
 
