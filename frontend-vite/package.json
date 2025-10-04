@@ -6,11 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "start": "node server.js",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview",
-    "start": "echo 'STARTING EXPRESS SERVER NOT VITE' && npm run build && node server.js",
-    "start:prod": "echo 'PRODUCTION START WITH EXPRESS' && npm run build && node server.js",
-    "railway:start": "echo 'RAILWAY STARTING EXPRESS SERVER' && npm run build && node server.js"
+    "preview": "vite preview"
   },
   "dependencies": {
     "express": "^4.18.2",
