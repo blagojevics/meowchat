@@ -89,10 +89,10 @@ const corsOptions = {
     const allowedOrigins = process.env.CORS_ORIGIN
       ? process.env.CORS_ORIGIN.split(",").map((url) => url.trim())
       : [
-          "http://localhost:3000",
-          "http://localhost:5173",
-          "https://meowgram.online",
-          "http://localhost:5174",
+          "https://meowchat-frontend-vite-production.up.railway.app", // Your chat app's own URL
+          "https://meowgram.online", // Meowgram's URL
+          "http://localhost:5173", // Your local dev environment for Meowgram
+          "http://localhost:5174", // Your local dev environment for MeowChat
         ];
 
     if (allowedOrigins.includes(origin)) {
@@ -118,10 +118,10 @@ const io = socketIo(server, {
       const allowedOrigins = process.env.CORS_ORIGIN
         ? process.env.CORS_ORIGIN.split(",").map((url) => url.trim())
         : [
-            "http://localhost:3000",
-            "http://localhost:5173",
-            "https://meowgram.online",
-            "http://localhost:5174",
+            "https://meowchat-frontend-vite-production.up.railway.app", // Your chat app's own URL
+            "https://meowgram.online", // Meowgram's URL
+            "http://localhost:5173", // Your local dev environment for Meowgram
+            "http://localhost:5174", // Your local dev environment for MeowChat
           ];
 
       if (allowedOrigins.includes(origin)) {
