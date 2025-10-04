@@ -12,15 +12,27 @@ pnpm-debug.log*
 .next/
 out/
 
-# Environment variables
+# Environment variables - NEVER COMMIT THESE!
 .env
 .env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+.env.deploy
+.env.production.local
 .env.development.local
 .env.test.local
-.env.production.local
 backend/.env
+backend/.env.production
+backend/.env.deploy
+backend/.env.local
 frontend/.env
+frontend/.env.production
+frontend/.env.deploy
 frontend-vite/.env
+frontend-vite/.env.production
+frontend-vite/.env.deploy
 
 # User uploads - NEVER track user files!
 backend/uploads/
@@ -28,11 +40,19 @@ backend/uploads/
 */uploads/
 !*/uploads/.gitkeep
 
-# Firebase sensitive files
+# Security-sensitive files - NEVER COMMIT!
 serviceAccountKey.json
 **/serviceAccountKey.json
 firebase-debug.log
 .firebase/
+**/test-mongodb-connection.js
+*connection-test*
+*credentials*
+*secret*
+*.pem
+*.key
+*.p12
+*.pfx
 
 # Database
 *.db
