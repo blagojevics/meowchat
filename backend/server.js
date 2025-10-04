@@ -82,28 +82,42 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
-    
+
     // Get allowed origins from environment variable
-    const allowedOrigins = process.env.CORS_ORIGIN ? 
-      process.env.CORS_ORIGIN.split(',').map(url => url.trim()) : 
-      ['http://localhost:3000', 'http://localhost:5173'];
-    
+    const allowedOrigins = process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(",").map((url) => url.trim())
+      : ["http://localhost:3000", "http://localhost:5173"];
+
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.log(`CORS blocked origin: ${origin}`);
-      console.log(`Allowed origins: ${allowedOrigins.join(', ')}`);
-      callback(new Error('Not allowed by CORS'));
+      console.log(`Allowed origins: ${allowedOrigins.join(", ")}`);
+      callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 };
 
 const io = socketIo(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+
+      // Get allowed origins from environment variable
+      const allowedOrigins = process.env.CORS_ORIGIN
+        ? process.env.CORS_ORIGIN.split(",").map((url) => url.trim())
+        : ["http://localhost:3000", "http://localhost:5173"];
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -184,7 +198,7 @@ app.use(
 app.use(cors(corsOptions));
 
 // Handle preflight requests
-app.options('*', cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
