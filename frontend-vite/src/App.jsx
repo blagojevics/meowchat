@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -14,7 +14,33 @@ import Login from "./components/Login";
 import ChatApp from "./components/ChatApp";
 
 function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, loginWithToken } = useAuth();
+  const isEmbedded = window.self !== window.top; // Detect if running in iframe
+
+  useEffect(() => {
+    const handleAuthMessage = (event) => {
+      // SECURITY: Crucial to verify the message is from a trusted source
+      if (event.origin !== "https://meowgram.online") {
+        console.warn("Message received from untrusted origin:", event.origin);
+        return;
+      }
+
+      // Check if the message contains the auth token
+      const { type, token } = event.data;
+      if (type === "AUTH_TOKEN" && token) {
+        // Use the token to authenticate the user in this app
+        loginWithToken(token);
+      }
+    };
+
+    // Set up the listener
+    window.addEventListener("message", handleAuthMessage);
+
+    // Clean up the listener when the app closes to prevent memory leaks
+    return () => {
+      window.removeEventListener("message", handleAuthMessage);
+    };
+  }, [loginWithToken]); // The dependency array ensures this setup runs only once
 
   if (loading) {
     return (
@@ -42,7 +68,8 @@ function App() {
         <Box
           className="App"
           sx={{
-            height: "100vh",
+            height: isEmbedded ? "100vh" : "100vh",
+            width: isEmbedded ? "100vw" : "auto",
             bgcolor: "background.default",
             overflow: "hidden",
           }}

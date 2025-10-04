@@ -12,6 +12,7 @@ const ChatApp = () => {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md")); // Mobile breakpoint
+  const isEmbedded = window.self !== window.top; // Detect if running in iframe
 
   const handleChatSelect = (chatId) => {
     setSelectedChatId(chatId);
@@ -140,80 +141,145 @@ const ChatApp = () => {
   return (
     <Box
       sx={{
-        height: "100vh",
+        height: isEmbedded ? "100vh" : "100vh",
+        width: isEmbedded ? "100vw" : "100vw",
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
+        justifyContent: isEmbedded ? "flex-start" : "center",
+        alignItems: isEmbedded ? "stretch" : "center",
         bgcolor: "background.default",
         overflow: "hidden",
       }}
     >
-      <Box
-        sx={{
-          width: "100%",
-          maxWidth: "1000px",
-          height: "90vh",
-          maxHeight: "800px",
-          margin: "0 auto",
-          display: "flex",
-          border: 1,
-          borderColor: "divider",
-          borderRadius: 2,
-          overflow: "hidden",
-          boxShadow: 3,
-        }}
-      >
-        {/* Left Sidebar - Chat List */}
+      {isEmbedded ? (
+        // Embedded layout - fill entire space
         <Box
           sx={{
-            width: "280px",
-            flexShrink: 0,
-            borderRight: 1,
-            borderColor: "divider",
-            bgcolor: "background.paper",
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            overflow: "hidden",
           }}
         >
-          <ChatList
-            selectedChatId={selectedChatId}
-            onChatSelect={handleChatSelect}
-            isMobile={false}
-          />
-        </Box>
-
-        {/* Center - Main Chat Window */}
-        <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          <ChatWindow
-            chatId={selectedChatId}
-            onToggleUserInfo={handleToggleUserInfo}
-            showUserInfo={showUserInfo}
-            onUserClick={handleUserClick}
-            isMobile={false}
-          />
-        </Box>
-
-        {/* Right Sidebar - User Info (Conditional) */}
-        {showUserInfo && selectedChatId && (
+          {/* Left Sidebar - Chat List */}
           <Box
             sx={{
-              width: "300px",
+              width: "280px",
               flexShrink: 0,
-              borderLeft: 1,
+              borderRight: 1,
               borderColor: "divider",
               bgcolor: "background.paper",
             }}
           >
-            <UserList
-              chatId={selectedChatId}
-              selectedUserId={selectedUserId}
-              onClose={() => {
-                setShowUserInfo(false);
-                setSelectedUserId(null);
-              }}
-              onUserSelect={(userId) => setSelectedUserId(userId)}
+            <ChatList
+              selectedChatId={selectedChatId}
+              onChatSelect={handleChatSelect}
+              isMobile={false}
             />
           </Box>
-        )}
-      </Box>
+
+          {/* Center - Main Chat Window */}
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <ChatWindow
+              chatId={selectedChatId}
+              onToggleUserInfo={handleToggleUserInfo}
+              showUserInfo={showUserInfo}
+              onUserClick={handleUserClick}
+              isMobile={false}
+            />
+          </Box>
+
+          {/* Right Sidebar - User Info (Conditional) */}
+          {showUserInfo && selectedChatId && (
+            <Box
+              sx={{
+                width: "300px",
+                flexShrink: 0,
+                borderLeft: 1,
+                borderColor: "divider",
+                bgcolor: "background.paper",
+              }}
+            >
+              <UserList
+                chatId={selectedChatId}
+                selectedUserId={selectedUserId}
+                onClose={() => {
+                  setShowUserInfo(false);
+                  setSelectedUserId(null);
+                }}
+                onUserSelect={(userId) => setSelectedUserId(userId)}
+              />
+            </Box>
+          )}
+        </Box>
+      ) : (
+        // Original desktop layout - centered with fixed size
+        <Box
+          sx={{
+            width: "100%",
+            maxWidth: "1000px",
+            height: "90vh",
+            maxHeight: "800px",
+            margin: "0 auto",
+            display: "flex",
+            border: 1,
+            borderColor: "divider",
+            borderRadius: 2,
+            overflow: "hidden",
+            boxShadow: 3,
+          }}
+        >
+          {/* Left Sidebar - Chat List */}
+          <Box
+            sx={{
+              width: "280px",
+              flexShrink: 0,
+              borderRight: 1,
+              borderColor: "divider",
+              bgcolor: "background.paper",
+            }}
+          >
+            <ChatList
+              selectedChatId={selectedChatId}
+              onChatSelect={handleChatSelect}
+              isMobile={false}
+            />
+          </Box>
+
+          {/* Center - Main Chat Window */}
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <ChatWindow
+              chatId={selectedChatId}
+              onToggleUserInfo={handleToggleUserInfo}
+              showUserInfo={showUserInfo}
+              onUserClick={handleUserClick}
+              isMobile={false}
+            />
+          </Box>
+
+          {/* Right Sidebar - User Info (Conditional) */}
+          {showUserInfo && selectedChatId && (
+            <Box
+              sx={{
+                width: "300px",
+                flexShrink: 0,
+                borderLeft: 1,
+                borderColor: "divider",
+                bgcolor: "background.paper",
+              }}
+            >
+              <UserList
+                chatId={selectedChatId}
+                selectedUserId={selectedUserId}
+                onClose={() => {
+                  setShowUserInfo(false);
+                  setSelectedUserId(null);
+                }}
+                onUserSelect={(userId) => setSelectedUserId(userId)}
+              />
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
   );
 };

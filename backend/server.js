@@ -88,7 +88,12 @@ const corsOptions = {
     // Get allowed origins from environment variable
     const allowedOrigins = process.env.CORS_ORIGIN
       ? process.env.CORS_ORIGIN.split(",").map((url) => url.trim())
-      : ["http://localhost:3000", "http://localhost:5173"];
+      : [
+          "http://localhost:3000",
+          "http://localhost:5173",
+          "https://meowgram.online",
+          "http://localhost:5174",
+        ];
 
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -112,7 +117,12 @@ const io = socketIo(server, {
       // Get allowed origins from environment variable
       const allowedOrigins = process.env.CORS_ORIGIN
         ? process.env.CORS_ORIGIN.split(",").map((url) => url.trim())
-        : ["http://localhost:3000", "http://localhost:5173"];
+        : [
+            "http://localhost:3000",
+            "http://localhost:5173",
+            "https://meowgram.online",
+            "http://localhost:5174",
+          ];
 
       if (allowedOrigins.includes(origin)) {
         callback(null, true);

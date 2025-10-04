@@ -189,6 +189,32 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithToken = async (firebaseToken) => {
+    try {
+      dispatch({ type: "AUTH_START" });
+
+      // Send Firebase token to backend
+      const response = await api.post("/auth/firebase-login", {
+        firebaseToken,
+      });
+      const { token, user } = response.data;
+
+      localStorage.setItem("token", token);
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+      dispatch({
+        type: "AUTH_SUCCESS",
+        payload: { user, token },
+      });
+
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || "Token login failed";
+      dispatch({ type: "AUTH_ERROR", payload: message });
+      return { success: false, error: message };
+    }
+  };
+
   const logout = async () => {
     try {
       await api.post("/auth/logout");
@@ -222,6 +248,7 @@ export const AuthProvider = ({ children }) => {
     loginWithFirebase,
     loginMeowgram,
     loginWithGoogle,
+    loginWithToken,
     logout,
     updateUser,
   };
