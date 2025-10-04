@@ -80,6 +80,18 @@ app.use((req, res, next) => {
   next();
 });
 
+// Set proper MIME types for static files
+app.use((req, res, next) => {
+  if (req.path.endsWith(".js")) {
+    res.type("application/javascript");
+  } else if (req.path.endsWith(".css")) {
+    res.type("text/css");
+  } else if (req.path.endsWith(".json")) {
+    res.type("application/json");
+  }
+  next();
+});
+
 // MAXIMUM REQUEST LOGGING
 app.use((req, res, next) => {
   console.log(`🌐 ${new Date().toISOString()} - ${req.method} ${req.path}`);
