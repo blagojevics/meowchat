@@ -1,3 +1,5 @@
+// MeowChat Backend Server - Production Ready
+// Last updated: October 4, 2025
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
