@@ -1,8 +1,9 @@
 [phases.build]
 cmds = [
   "echo 'BUILDING WITH NIXPACKS'",
-  "npm install",
-  "npm run build",
+  "npm install -g pnpm",
+  "pnpm install --frozen-lockfile",
+  "pnpm run build",
   "echo 'BUILD COMPLETE - DIST FOLDER:'",
   "ls -la dist/"
 ]
