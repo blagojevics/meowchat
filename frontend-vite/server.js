@@ -72,10 +72,11 @@ try {
   console.error("❌ Error reading index.html:", err);
 }
 
-// Security headers
+// Security headers - ALLOWED for iframe embedding
 app.use((req, res, next) => {
   res.header("X-Content-Type-Options", "nosniff");
-  res.header("X-Frame-Options", "DENY");
+  // REMOVE X-Frame-Options: DENY to allow iframe embedding
+  // res.header("X-Frame-Options", "DENY");
   res.header("X-XSS-Protection", "1; mode=block");
   next();
 });
@@ -88,6 +89,8 @@ app.use((req, res, next) => {
     res.type("text/css");
   } else if (req.path.endsWith(".json")) {
     res.type("application/json");
+  } else if (req.path.endsWith(".mjs")) {
+    res.type("application/javascript");
   }
   next();
 });
