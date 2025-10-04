@@ -12,6 +12,7 @@ const ChatApp = () => {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md")); // Mobile breakpoint
+  const isInIframe = window.self !== window.top; // Detect if running in iframe
 
   const handleChatSelect = (chatId) => {
     setSelectedChatId(chatId);
@@ -141,26 +142,27 @@ const ChatApp = () => {
     <Box
       sx={{
         height: "100vh",
+        width: "100vw",
         display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
+        justifyContent: isInIframe ? "flex-start" : "center",
+        alignItems: isInIframe ? "stretch" : "center",
         bgcolor: "background.default",
         overflow: "hidden",
       }}
     >
       <Box
         sx={{
-          width: "100%",
-          maxWidth: "1000px",
-          height: "90vh",
-          maxHeight: "800px",
-          margin: "0 auto",
+          width: isInIframe ? "100%" : "100%",
+          maxWidth: isInIframe ? "none" : "1000px",
+          height: isInIframe ? "100%" : "90vh",
+          maxHeight: isInIframe ? "none" : "800px",
+          margin: isInIframe ? 0 : "0 auto",
           display: "flex",
-          border: 1,
+          border: isInIframe ? 0 : 1,
           borderColor: "divider",
-          borderRadius: 2,
+          borderRadius: isInIframe ? 0 : 2,
           overflow: "hidden",
-          boxShadow: 3,
+          boxShadow: isInIframe ? 0 : 3,
         }}
       >
         {/* Left Sidebar - Chat List */}
