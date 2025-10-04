@@ -3,11 +3,13 @@ cmds = [
   "echo 'BUILDING WITH NIXPACKS - USING NPM'",
   "npm install",
   "export NODE_ENV=production",
-  "npm run build",
+  "npm run build -- --mode production",
   "echo 'BUILD COMPLETE - DIST FOLDER:'",
   "ls -la dist/",
   "echo 'INDEX.HTML CONTENT:'",
-  "head -20 dist/index.html"
+  "head -20 dist/index.html",
+  "echo 'CHECKING IF BUILD SUCCEEDED:'",
+  "grep -q 'assets/' dist/index.html && echo 'SUCCESS: Production assets found' || (echo 'FAILURE: Dev paths found' && exit 1)"
 ]
 
 [phases.start]
