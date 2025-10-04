@@ -111,6 +111,7 @@ app.use(
 // Handle React Router - send all requests to index.html
 app.get("*", (req, res) => {
   console.log(`🔄 Fallback: Serving index.html for: ${req.path}`);
+  res.type("text/html");
   res.sendFile(indexPath);
 });
 
