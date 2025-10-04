@@ -96,6 +96,17 @@ app.use(
   })
 );
 
+// Lightweight healthcheck endpoint for Railway / monitoring
+app.get("/healthz", (req, res) => {
+  res
+    .status(200)
+    .json({
+      status: "ok",
+      uptime: process.uptime(),
+      env: process.env.NODE_ENV || "unknown",
+    });
+});
+
 // Handle React Router - send all requests to index.html
 app.get("*", (req, res) => {
   console.log(`🔄 Fallback: Serving index.html for: ${req.path}`);

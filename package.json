@@ -5,7 +5,7 @@
   "description": "MeowChat full-stack chat application workspace",
   "scripts": {
     "dev": "pnpm --parallel --recursive run dev",
-    "start": "pnpm --parallel --recursive run start",
+    "start": "pnpm --filter ./frontend-vite run start",
     "build": "pnpm --recursive run build",
     "install:all": "pnpm install --recursive",
     "clean": "pnpm --recursive exec rm -rf node_modules && rm -rf node_modules"
