@@ -41,7 +41,7 @@ function App() {
       >
         <Box
           className="App"
-          sx={{ height: "100vh", bgcolor: "background.default" }}
+          sx={{ height: "100vh", bgcolor: "background.default", overflow: "hidden" }}
         >
           <Routes>
             <Route

@@ -140,12 +140,12 @@ const ChatApp = () => {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        height: "100vh",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
         bgcolor: "background.default",
-        p: 2,
+        overflow: "hidden",
       }}
     >
       <Box
