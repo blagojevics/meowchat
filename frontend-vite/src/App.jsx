@@ -15,7 +15,6 @@ import ChatApp from "./components/ChatApp";
 
 function App() {
   const { user, loading, loginWithToken } = useAuth();
-  const isEmbedded = window.self !== window.top; // Detect if running in iframe
 
   useEffect(() => {
     const handleAuthMessage = (event) => {
@@ -68,8 +67,7 @@ function App() {
         <Box
           className="App"
           sx={{
-            height: isEmbedded ? "100vh" : "100vh",
-            width: isEmbedded ? "100vw" : "auto",
+            height: "100vh",
             bgcolor: "background.default",
             overflow: "hidden",
           }}
