@@ -91,6 +91,8 @@ app.use((req, res, next) => {
     res.type("application/json");
   } else if (req.path.endsWith(".mjs")) {
     res.type("application/javascript");
+  } else if (req.path.endsWith(".map")) {
+    res.type("application/json");
   }
   next();
 });
@@ -108,6 +110,19 @@ app.use(
   express.static(distPath, {
     maxAge: "1d",
     etag: false,
+    setHeaders: (res, path) => {
+      if (path.endsWith(".js")) {
+        res.setHeader("Content-Type", "application/javascript");
+      } else if (path.endsWith(".css")) {
+        res.setHeader("Content-Type", "text/css");
+      } else if (path.endsWith(".json")) {
+        res.setHeader("Content-Type", "application/json");
+      } else if (path.endsWith(".mjs")) {
+        res.setHeader("Content-Type", "application/javascript");
+      } else if (path.endsWith(".map")) {
+        res.setHeader("Content-Type", "application/json");
+      }
+    },
   })
 );
 

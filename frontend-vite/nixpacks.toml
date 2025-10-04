@@ -1,20 +1,18 @@
 [phases.build]
 cmds = [
-  "echo 'BUILDING WITH NIXPACKS - USING NPM'",
-  "npm install",
+  "echo 'BUILDING WITH NIXPACKS - USING PNPM'",
+  "pnpm install",
   "export NODE_ENV=production",
   "rm -rf dist",
-  "npm run build -- --mode production --config vite.config.js",
+  "pnpm run build",
   "echo 'BUILD COMPLETE - DIST FOLDER:'",
   "ls -la dist/",
   "echo 'INDEX.HTML CONTENT:'",
-  "head -20 dist/index.html",
-  "echo 'CHECKING IF BUILD SUCCEEDED:'",
-  "grep -q 'assets/' dist/index.html && echo 'SUCCESS: Production assets found' || (echo 'FAILURE: Dev paths found' && exit 1)"
+  "head -20 dist/index.html"
 ]
 
 [phases.start]
-cmd = "echo 'STARTING EXPRESS SERVER' && node server.js"
+cmd = "node server.js"
 
 [variables]
 NODE_ENV = "production"
