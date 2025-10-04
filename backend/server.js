@@ -1,5 +1,7 @@
-// MeowChat Backend Server - Production Ready
+// MeowChat Backend Server - Production Ready & Refactored
 // Last updated: October 4, 2025
+
+// --- 1. IMPORTS ---
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
@@ -7,68 +9,42 @@ const cors = require("cors");
 const helmet = require("helmet");
 const path = require("path");
 const fs = require("fs");
-
-// Load environment variables FIRST with explicit path
 const dotenv = require("dotenv");
 
-// Try multiple .env file locations
+// --- 2. ENVIRONMENT VARIABLE SETUP ---
+// Robustly find and load the .env file from multiple possible locations
 const envPaths = [
   path.join(__dirname, ".env"),
   path.join(process.cwd(), ".env"),
   path.join(process.cwd(), "backend", ".env"),
 ];
-
 let envLoaded = false;
 for (const envPath of envPaths) {
   if (fs.existsSync(envPath)) {
-    console.log(`📁 Loading .env from: ${envPath}`);
-    const result = dotenv.config({ path: envPath });
-    if (!result.error) {
-      envLoaded = true;
-      console.log(`✅ Environment variables loaded from: ${envPath}`);
-      break;
-    } else {
-      console.warn(`⚠️ Error loading ${envPath}:`, result.error.message);
-    }
+    dotenv.config({ path: envPath });
+    envLoaded = true;
+    console.log(`✅ Environment variables loaded from: ${envPath}`);
+    break;
   }
 }
-
 if (!envLoaded) {
-  console.warn("⚠️ No .env file found, using system environment variables");
-  dotenv.config(); // Fallback to default behavior
+  console.warn("⚠️ No .env file found, using system environment variables.");
+  dotenv.config(); // Fallback to default
 }
 
-// Debug: Show current working directory and __dirname
-console.log(`📍 Current working directory: ${process.cwd()}`);
-console.log(`📍 Script directory (__dirname): ${__dirname}`);
-
-// Validate critical environment variables
+// Validate that critical environment variables are set
 const requiredEnvVars = ["MONGODB_URI", "JWT_SECRET", "FIREBASE_PROJECT_ID"];
-const missingEnvVars = requiredEnvVars.filter((envVar) => {
-  const value = process.env[envVar];
-  const exists = value && value.trim() !== "";
-  console.log(`🔍 Checking ${envVar}: ${exists ? "✅ SET" : "❌ MISSING"}`);
-  return !exists;
-});
-
+const missingEnvVars = requiredEnvVars.filter((envVar) => !process.env[envVar]);
 if (missingEnvVars.length > 0) {
-  console.error("❌ Missing required environment variables:");
-  missingEnvVars.forEach((envVar) => {
-    console.error(`   - ${envVar}: "${process.env[envVar] || "undefined"}"`);
-  });
-  console.error("📁 Please check your .env file in the backend directory");
-  console.error("🔍 Searched paths:", envPaths);
+  console.error(
+    "❌ CRITICAL ERROR: Missing required environment variables:",
+    missingEnvVars.join(", ")
+  );
   process.exit(1);
 }
+console.log("✅ All required environment variables are set.");
 
-console.log("✅ Environment variables loaded successfully");
-console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
-console.log(`🔧 MongoDB URI: ${process.env.MONGODB_URI ? "SET" : "NOT SET"}`);
-console.log(`🔑 JWT Secret: ${process.env.JWT_SECRET ? "SET" : "NOT SET"}`);
-console.log(
-  `🔥 Firebase Project: ${process.env.FIREBASE_PROJECT_ID || "NOT SET"}`
-);
-
+// --- 3. DATABASE & ROUTE IMPORTS ---
 const connectDB = require("./config/database");
 const authRoutes = require("./routes/auth");
 const chatRoutes = require("./routes/chats");
@@ -76,210 +52,77 @@ const messageRoutes = require("./routes/messages");
 const uploadRoutes = require("./routes/upload_simple");
 const socketHandlers = require("./socket/socketHandlers");
 
+// --- 4. CORE APP INITIALIZATION (CRITICAL FIX) ---
+// Define app, server, and io ONCE at the top.
 const app = express();
 const server = http.createServer(app);
 
-// CORS origins for MeowGram integration
+// --- 5. CORS CONFIGURATION ---
+// Define CORS options once and reuse for both Express and Socket.IO
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((url) => url.trim())
+  : [
+      "https://meowchat-frontend-vite-production.up.railway.app",
+      "https://meowgram.online",
+      "http://localhost:5173",
+      "http://localhost:5174",
+    ];
+
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-
-    // Get allowed origins from environment variable
-    const allowedOrigins = process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(",").map((url) => url.trim())
-      : [
-          "https://meowchat-frontend-vite-production.up.railway.app", // Your chat app's own URL
-          "https://meowgram.online", // Meowgram's URL
-          "http://localhost:5173", // Your local dev environment for Meowgram
-          "http://localhost:5174", // Your local dev environment for MeowChat
-        ];
-
-    if (allowedOrigins.includes(origin)) {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      console.log(`CORS blocked origin: ${origin}`);
-      console.log(`Allowed origins: ${allowedOrigins.join(", ")}`);
+      console.error(`❌ CORS blocked origin: ${origin}`);
       callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 };
 
-const io = socketIo(server, {
-  cors: {
-    origin: function (origin, callback) {
-      // Allow requests with no origin (mobile apps, curl, etc.)
-      if (!origin) return callback(null, true);
+// --- 6. SOCKET.IO INITIALIZATION ---
+const io = socketIo(server, { cors: corsOptions });
 
-      // Get allowed origins from environment variable
-      const allowedOrigins = process.env.CORS_ORIGIN
-        ? process.env.CORS_ORIGIN.split(",").map((url) => url.trim())
-        : [
-            "https://meowchat-frontend-vite-production.up.railway.app", // Your chat app's own URL
-            "https://meowgram.online", // Meowgram's URL
-            "http://localhost:5173", // Your local dev environment for Meowgram
-            "http://localhost:5174", // Your local dev environment for MeowChat
-          ];
-
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
-
-// Socket.io authentication middleware
-io.use(async (socket, next) => {
-  try {
-    const { userId, userEmail } = socket.handshake.auth;
-    if (!userId || !userEmail) {
-      console.log("⚠️ Socket auth missing userId or userEmail");
-      return next(new Error("Authentication required"));
-    }
-
-    // Add user to socket for tracking
-    socket.userId = userId;
-    socket.userEmail = userEmail;
-    console.log(`🔌 Socket authenticated: ${userEmail} (${userId})`);
-    next();
-  } catch (err) {
-    console.error("❌ Socket authentication error:", err);
-    next(new Error("Authentication error"));
-  }
-});
-
-// Connect to MongoDB
-connectDB();
-
-// Dynamic CSP configuration based on environment
-const isProduction = process.env.NODE_ENV === "production";
-const backendUrl =
-  process.env.BACKEND_URL ||
-  "https://meowchat-backend-production-0763.up.railway.app";
-
-// Middleware
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'", ...(isProduction ? [backendUrl] : [])],
-        styleSrc: ["'self'", "'unsafe-inline'", "https:", "data:"],
-        scriptSrc: [
-          "'self'",
-          ...(isProduction
-            ? ["'unsafe-inline'"]
-            : ["'unsafe-eval'", "'unsafe-inline'"]),
-        ],
-        imgSrc: ["'self'", "data:", "https:", "http:", "blob:", "*"],
-        connectSrc: [
-          "'self'",
-          "wss:",
-          "https:",
-          "ws:",
-          "http:",
-          ...(isProduction ? [backendUrl] : ["http://localhost:*"]),
-        ],
-        fontSrc: ["'self'", "https:", "data:"],
-        objectSrc: ["'none'"],
-        mediaSrc: ["'self'", "https:", "http:", "data:", "blob:"],
-        frameSrc: ["'self'"],
-        workerSrc: ["'self'", "blob:"],
-        manifestSrc: ["'self'"],
-        ...(isProduction ? { upgradeInsecureRequests: [] } : {}),
-      },
-    },
-    hsts: isProduction
-      ? {
-          maxAge: 31536000,
-          includeSubDomains: true,
-          preload: true,
-        }
-      : false,
-  })
-);
-
-// Apply CORS middleware
-app.use(cors(corsOptions));
-
-// Handle preflight requests
-app.options("*", cors(corsOptions));
+// --- 7. MIDDLEWARE SETUP ---
+// Apply middleware in the correct order AFTER app initialization.
+app.use(helmet()); // Provides sensible security defaults
+app.use(cors(corsOptions)); // Use the CORS options defined above
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Serve uploaded files (temporarily without auth to not break functionality)
-// TODO: Add auth back after testing: const auth = require("./middleware/auth");
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-
-// Make io available to routes
+// Make io available to all routes
 app.use((req, res, next) => {
   req.io = io;
   next();
 });
 
-// Routes
+// Serve uploaded files statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// --- 8. API ROUTES ---
 app.use("/api/auth", authRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/upload", uploadRoutes);
 
-// Favicon route to prevent 404 errors
-app.get("/favicon.ico", (req, res) => {
-  res.status(204).end(); // No content response
-});
-
-// Root route for deployment verification
+// --- 9. HEALTH CHECK & ROOT ROUTES ---
 app.get("/", (req, res) => {
-  res.json({
-    message: "🐱 MeowChat Backend is running!",
-    version: "1.0.0",
-    environment: process.env.NODE_ENV || "development",
-    endpoints: {
-      health: "/health",
-      api: "/api/health",
-      auth: "/api/auth",
-      chats: "/api/chats",
-      messages: "/api/messages",
-      upload: "/api/upload",
-    },
-  });
+  res.json({ message: "🐱 MeowChat Backend is running!", version: "1.0.1" });
 });
-
-// Health check endpoint for MeowGram debugging
 app.get("/health", (req, res) => {
-  res.json({
-    status: "ok",
-    port: process.env.PORT || 5000,
-    timestamp: new Date().toISOString(),
-    cors: "configured for MeowGram",
-    endpoints: {
-      auth: "/api/auth/*",
-      chats: "/api/chats/*",
-      messages: "/api/messages/*",
-      uploads: "/api/upload/*",
-    },
-  });
+  res.status(200).json({ status: "ok" });
 });
 
-app.get("/api/health", (req, res) => {
-  res.json({ status: "OK", message: "MeowChat Backend is running!" });
-});
-
-// Socket.io connection handling
+// --- 10. SOCKET.IO HANDLERS ---
 socketHandlers(io);
 
+// --- 11. SERVER START ---
 const PORT = process.env.PORT || 5000;
-
 server.listen(PORT, () => {
-  console.log(`🐱 MeowChat server running on port ${PORT}`);
-  console.log(`🌐 Environment: ${process.env.NODE_ENV}`);
+  console.log(`🐱 MeowChat server running successfully on port ${PORT}`);
 });
+
+// --- 12. DATABASE CONNECTION ---
+connectDB();
 
 module.exports = app;
