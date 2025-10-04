@@ -2,6 +2,7 @@
   "name": "meowchat-frontend-vite",
   "private": true,
   "version": "1.0.0",
+  "main": "server.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
