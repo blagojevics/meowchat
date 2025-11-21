@@ -17,17 +17,6 @@ MeowChat is a comprehensive messaging application designed for security, perform
 - 🚀 **Scalable & Modern Tech** - Built with Node.js, Express, MongoDB, and React 18 with Vite for a high-performance, developer-friendly stack.
 - 🎨 **Customizable UI** - A clean, responsive interface with built-in dark and light mode support.
 
-## 🌐 Live Demo & Test Account
-
-_(This section is a placeholder for your deployment information)_
-
-You can view the live, deployed application here: [https://meow.chat](https://meow.chat) _(coming soon)_
-
-To explore the app's full functionality, please feel free to log in with an existing Meowgram account or use the test credentials:
-
-- **Email:** `chattest@example.com`
-- **Password:** `testpassword`
-
 ## 🐱 The Meowgram Connection
 
 MeowChat is designed to work as a standalone application but also as a companion to Meowgram. The hybrid authentication system allows users to sign in with their existing Meowgram credentials, automatically syncing their profile information, including:
